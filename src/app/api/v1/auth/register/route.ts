@@ -19,7 +19,7 @@ export async function POST(request: NextRequest) {
     // Validate request body
     const { data, errors: validationErrors } = await validateBody(
       request,
-      registerSchema,
+      registerSchema
     );
 
     if (validationErrors) {
@@ -43,14 +43,14 @@ export async function POST(request: NextRequest) {
         return error(
           ErrorCodes.EMAIL_EXISTS,
           "An account with this email already exists",
-          409,
+          409
         );
       }
       if (existing.username === username) {
         return error(
           ErrorCodes.USERNAME_EXISTS,
           "This username is already taken",
-          409,
+          409
         );
       }
     }
@@ -93,7 +93,7 @@ export async function POST(request: NextRequest) {
         sessionId, // Include for mobile apps to store
       },
       undefined,
-      201,
+      201
     );
   } catch (err) {
     console.error("Registration error:", err);

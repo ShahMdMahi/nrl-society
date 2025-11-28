@@ -33,7 +33,7 @@ export type ApiResponse<T = unknown> = ApiSuccessResponse<T> | ApiErrorResponse;
 export function success<T>(
   data: T,
   meta?: ApiSuccessResponse["meta"],
-  status = 200,
+  status = 200
 ): NextResponse<ApiSuccessResponse<T>> {
   return NextResponse.json(
     {
@@ -41,7 +41,7 @@ export function success<T>(
       data,
       ...(meta && { meta }),
     },
-    { status },
+    { status }
   );
 }
 
@@ -52,7 +52,7 @@ export function error(
   code: string,
   message: string,
   status = 400,
-  details?: unknown,
+  details?: unknown
 ): NextResponse<ApiErrorResponse> {
   const errorObj: ApiErrorResponse["error"] = { code, message };
   if (details !== undefined) {
@@ -63,7 +63,7 @@ export function error(
       success: false as const,
       error: errorObj,
     },
-    { status },
+    { status }
   );
 }
 
@@ -103,7 +103,7 @@ export const forbidden = () =>
   error(
     ErrorCodes.FORBIDDEN,
     "You don't have permission to access this resource",
-    403,
+    403
   );
 
 export const notFound = (resource = "Resource") =>
@@ -119,5 +119,5 @@ export const rateLimitError = () =>
   error(
     ErrorCodes.RATE_LIMIT_EXCEEDED,
     "Too many requests, please try again later",
-    429,
+    429
   );

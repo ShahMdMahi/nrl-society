@@ -132,14 +132,14 @@ export function PostCard({ post, onDelete }: PostCardProps) {
             </Avatar>
             <div>
               <div className="flex items-center gap-1">
-                <span className="font-semibold text-sm">
+                <span className="text-sm font-semibold">
                   {post.author.displayName}
                 </span>
                 {post.author.isVerified && (
-                  <BadgeCheck className="h-4 w-4 text-primary fill-primary" />
+                  <BadgeCheck className="text-primary fill-primary h-4 w-4" />
                 )}
               </div>
-              <div className="flex items-center gap-1 text-xs text-muted-foreground">
+              <div className="text-muted-foreground flex items-center gap-1 text-xs">
                 <span>@{post.author.username}</span>
                 <span>·</span>
                 <span>{timeAgo}</span>
@@ -180,15 +180,15 @@ export function PostCard({ post, onDelete }: PostCardProps) {
           <p className="text-sm whitespace-pre-wrap">{post.content}</p>
         )}
         {post.mediaUrls && post.mediaUrls.length > 0 && (
-          <div className="mt-3 grid gap-2 rounded-lg overflow-hidden">
+          <div className="mt-3 grid gap-2 overflow-hidden rounded-lg">
             {/* TODO: Implement media gallery */}
             {post.mediaUrls.map((url, index) => (
-              <div key={index} className="relative w-full aspect-video">
+              <div key={index} className="relative aspect-video w-full">
                 <Image
                   src={url}
                   alt="Post media"
                   fill
-                  className="object-cover rounded-lg"
+                  className="rounded-lg object-cover"
                   unoptimized
                 />
               </div>
@@ -197,7 +197,7 @@ export function PostCard({ post, onDelete }: PostCardProps) {
         )}
       </CardContent>
       <CardFooter className="border-t pt-3">
-        <div className="flex items-center gap-1 w-full">
+        <div className="flex w-full items-center gap-1">
           <Button
             variant="ghost"
             size="sm"

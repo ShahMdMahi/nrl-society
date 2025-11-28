@@ -23,7 +23,7 @@ export interface PresignedUrlOptions {
 export async function uploadFile(
   key: string,
   data: ArrayBuffer | ReadableStream | string,
-  options?: UploadOptions,
+  options?: UploadOptions
 ): Promise<R2Object> {
   const { env } = await getCloudflareContext();
   const appEnv = env as AppEnv;
@@ -125,7 +125,7 @@ export function getPublicUrl(key: string, bucketUrl: string): string {
 export function generateFileKey(
   userId: string,
   fileName: string,
-  folder?: string,
+  folder?: string
 ): string {
   const timestamp = Date.now();
   const randomSuffix = crypto.randomUUID().slice(0, 8);
@@ -146,7 +146,7 @@ export function generateFileKey(
  */
 export function validateFileType(
   contentType: string,
-  allowedTypes: string[],
+  allowedTypes: string[]
 ): boolean {
   return allowedTypes.some((type) => {
     if (type.endsWith("/*")) {

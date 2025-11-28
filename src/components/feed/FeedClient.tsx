@@ -63,7 +63,7 @@ export function FeedClient({ user }: FeedClientProps) {
         setIsLoadingMore(false);
       }
     },
-    [cursor],
+    [cursor]
   );
 
   useEffect(() => {
@@ -92,7 +92,7 @@ export function FeedClient({ user }: FeedClientProps) {
       <div className="space-y-4">
         <PostComposer user={user} />
         {[1, 2, 3].map((i) => (
-          <div key={i} className="p-4 border rounded-lg space-y-3">
+          <div key={i} className="space-y-3 rounded-lg border p-4">
             <div className="flex items-center gap-3">
               <Skeleton className="h-10 w-10 rounded-full" />
               <div className="space-y-2">
@@ -117,11 +117,11 @@ export function FeedClient({ user }: FeedClientProps) {
       <PostComposer user={user} onPostCreated={handlePostCreated} />
 
       {error && (
-        <div className="p-4 text-sm text-destructive bg-destructive/10 rounded-lg">
+        <div className="text-destructive bg-destructive/10 rounded-lg p-4 text-sm">
           {error}
           <Button
             variant="link"
-            className="ml-2 p-0 h-auto"
+            className="ml-2 h-auto p-0"
             onClick={() => fetchPosts()}
           >
             Try again
@@ -130,7 +130,7 @@ export function FeedClient({ user }: FeedClientProps) {
       )}
 
       {posts.length === 0 && !error ? (
-        <div className="text-center py-12 text-muted-foreground">
+        <div className="text-muted-foreground py-12 text-center">
           <p className="text-lg font-medium">No posts yet</p>
           <p className="text-sm">Be the first to share something!</p>
         </div>

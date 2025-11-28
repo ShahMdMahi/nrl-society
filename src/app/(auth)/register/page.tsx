@@ -84,7 +84,7 @@ export default function RegisterPage() {
   return (
     <Card>
       <CardHeader className="space-y-1">
-        <CardTitle className="text-2xl text-center">
+        <CardTitle className="text-center text-2xl">
           Create an account
         </CardTitle>
         <CardDescription className="text-center">
@@ -94,7 +94,7 @@ export default function RegisterPage() {
       <form onSubmit={handleSubmit}>
         <CardContent className="space-y-4">
           {error && (
-            <div className="p-3 text-sm text-destructive bg-destructive/10 rounded-md">
+            <div className="text-destructive bg-destructive/10 rounded-md p-3 text-sm">
               {error}
             </div>
           )}
@@ -108,7 +108,7 @@ export default function RegisterPage() {
               disabled={isLoading}
             />
             {fieldErrors.displayName && (
-              <p className="text-sm text-destructive">
+              <p className="text-destructive text-sm">
                 {fieldErrors.displayName}
               </p>
             )}
@@ -123,7 +123,7 @@ export default function RegisterPage() {
               disabled={isLoading}
             />
             {fieldErrors.username && (
-              <p className="text-sm text-destructive">{fieldErrors.username}</p>
+              <p className="text-destructive text-sm">{fieldErrors.username}</p>
             )}
           </div>
           <div className="space-y-2">
@@ -137,7 +137,7 @@ export default function RegisterPage() {
               disabled={isLoading}
             />
             {fieldErrors.email && (
-              <p className="text-sm text-destructive">{fieldErrors.email}</p>
+              <p className="text-destructive text-sm">{fieldErrors.email}</p>
             )}
           </div>
           <div className="space-y-2">
@@ -152,7 +152,7 @@ export default function RegisterPage() {
               disabled={isLoading}
             />
             {fieldErrors.password && (
-              <p className="text-sm text-destructive">{fieldErrors.password}</p>
+              <p className="text-destructive text-sm">{fieldErrors.password}</p>
             )}
           </div>
           <div className="space-y-2">
@@ -167,7 +167,7 @@ export default function RegisterPage() {
               disabled={isLoading}
             />
             {fieldErrors.confirmPassword && (
-              <p className="text-sm text-destructive">
+              <p className="text-destructive text-sm">
                 {fieldErrors.confirmPassword}
               </p>
             )}
@@ -178,7 +178,7 @@ export default function RegisterPage() {
             {isLoading && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
             Create account
           </Button>
-          <p className="text-sm text-muted-foreground text-center">
+          <p className="text-muted-foreground text-center text-sm">
             Already have an account?{" "}
             <Link href="/login" className="text-primary hover:underline">
               Sign in

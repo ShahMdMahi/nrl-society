@@ -36,7 +36,7 @@ export async function GET(request: NextRequest) {
     const { searchParams } = new URL(request.url);
     const { data, errors: validationErrors } = validateParams(
       searchParams,
-      searchSchema,
+      searchSchema
     );
 
     if (validationErrors) {
@@ -65,8 +65,8 @@ export async function GET(request: NextRequest) {
         .where(
           or(
             like(users.username, searchPattern),
-            like(users.displayName, searchPattern),
-          ),
+            like(users.displayName, searchPattern)
+          )
         )
         .limit(limit)
         .offset(offset),
@@ -76,8 +76,8 @@ export async function GET(request: NextRequest) {
         .where(
           or(
             like(users.username, searchPattern),
-            like(users.displayName, searchPattern),
-          ),
+            like(users.displayName, searchPattern)
+          )
         ),
     ]);
 

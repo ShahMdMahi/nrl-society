@@ -38,7 +38,7 @@ export async function GET(request: NextRequest) {
     const { searchParams } = new URL(request.url);
     const { data, errors: validationErrors } = validateParams(
       searchParams,
-      cursorPaginationSchema,
+      cursorPaginationSchema
     );
 
     if (validationErrors) {
@@ -96,8 +96,8 @@ export async function GET(request: NextRequest) {
               and(
                 eq(likes.userId, userId),
                 eq(likes.targetType, "post"),
-                inArray(likes.targetId, postIds),
-              ),
+                inArray(likes.targetId, postIds)
+              )
             )
         : [];
 
@@ -149,7 +149,7 @@ export async function POST(request: NextRequest) {
     // Validate request body
     const { data, errors: validationErrors } = await validateBody(
       request,
-      createPostSchema,
+      createPostSchema
     );
 
     if (validationErrors) {
@@ -203,7 +203,7 @@ export async function POST(request: NextRequest) {
         isLiked: false,
       },
       undefined,
-      201,
+      201
     );
   } catch (err) {
     console.error("Create post error:", err);

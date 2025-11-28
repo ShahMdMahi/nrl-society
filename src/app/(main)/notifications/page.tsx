@@ -99,7 +99,7 @@ export default function NotificationsPage() {
 
       if (ids) {
         setNotifications((prev) =>
-          prev.map((n) => (ids.includes(n.id) ? { ...n, isRead: true } : n)),
+          prev.map((n) => (ids.includes(n.id) ? { ...n, isRead: true } : n))
         );
         setUnreadCount((prev) => Math.max(0, prev - ids.length));
       } else {
@@ -122,7 +122,7 @@ export default function NotificationsPage() {
 
   if (isLoading) {
     return (
-      <div className="max-w-2xl mx-auto space-y-4">
+      <div className="mx-auto max-w-2xl space-y-4">
         <Card>
           <CardHeader>
             <Skeleton className="h-8 w-40" />
@@ -155,15 +155,15 @@ export default function NotificationsPage() {
           </div>
           {unreadCount > 0 && (
             <Button variant="ghost" size="sm" onClick={() => markAsRead()}>
-              <Check className="h-4 w-4 mr-2" />
+              <Check className="mr-2 h-4 w-4" />
               Mark all read
             </Button>
           )}
         </CardHeader>
         <CardContent>
           {notifications.length === 0 ? (
-            <div className="text-center py-8 text-muted-foreground">
-              <Bell className="h-12 w-12 mx-auto mb-4 opacity-50" />
+            <div className="text-muted-foreground py-8 text-center">
+              <Bell className="mx-auto mb-4 h-12 w-12 opacity-50" />
               <p>No notifications yet</p>
             </div>
           ) : (
@@ -171,7 +171,7 @@ export default function NotificationsPage() {
               {notifications.map((notification) => (
                 <div
                   key={notification.id}
-                  className={`flex items-start gap-3 p-3 rounded-lg transition-colors ${
+                  className={`flex items-start gap-3 rounded-lg p-3 transition-colors ${
                     notification.isRead
                       ? "hover:bg-muted/50"
                       : "bg-primary/5 hover:bg-primary/10"
@@ -189,11 +189,11 @@ export default function NotificationsPage() {
                           .toUpperCase() || "?"}
                       </AvatarFallback>
                     </Avatar>
-                    <div className="absolute -bottom-1 -right-1 bg-background rounded-full p-0.5">
+                    <div className="bg-background absolute -right-1 -bottom-1 rounded-full p-0.5">
                       {getNotificationIcon(notification.type)}
                     </div>
                   </div>
-                  <div className="flex-1 min-w-0">
+                  <div className="min-w-0 flex-1">
                     <p className="text-sm">
                       {notification.actor && (
                         <Link
@@ -205,7 +205,7 @@ export default function NotificationsPage() {
                       )}{" "}
                       {notification.content}
                     </p>
-                    <p className="text-xs text-muted-foreground">
+                    <p className="text-muted-foreground text-xs">
                       {formatDistanceToNow(new Date(notification.createdAt), {
                         addSuffix: true,
                       })}
@@ -225,7 +225,7 @@ export default function NotificationsPage() {
                     <Button
                       variant="ghost"
                       size="icon"
-                      className="h-8 w-8 text-destructive hover:text-destructive"
+                      className="text-destructive hover:text-destructive h-8 w-8"
                       onClick={() => deleteNotification(notification.id)}
                     >
                       <Trash2 className="h-4 w-4" />

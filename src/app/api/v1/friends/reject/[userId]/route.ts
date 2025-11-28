@@ -18,7 +18,7 @@ export async function POST(_request: NextRequest, context: RouteContext) {
       return error(
         "UNAUTHORIZED",
         "Please log in to reject friend requests",
-        401,
+        401
       );
     }
 
@@ -34,8 +34,8 @@ export async function POST(_request: NextRequest, context: RouteContext) {
         and(
           eq(friendships.requesterId, userId),
           eq(friendships.addresseeId, currentUser.id),
-          eq(friendships.status, "pending"),
-        ),
+          eq(friendships.status, "pending")
+        )
       )
       .limit(1);
 

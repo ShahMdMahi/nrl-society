@@ -1,0 +1,21 @@
+# Dependencies
+node_modules
+pnpm-lock.yaml
+
+# Build outputs
+.next
+out
+build
+dist
+
+# Cloudflare
+.wrangler
+.open-next
+
+# Generated files
+next-env.d.ts
+worker-configuration.d.ts
+
+# Other
+.git
+*.md

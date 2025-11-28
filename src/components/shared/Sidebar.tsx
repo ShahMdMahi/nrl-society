@@ -18,7 +18,7 @@ export function Sidebar() {
   const pathname = usePathname();
 
   return (
-    <aside className="hidden lg:block w-64 shrink-0">
+    <aside className="hidden w-64 shrink-0 lg:block">
       <div className="sticky top-20 space-y-4">
         <nav className="space-y-1">
           {sidebarItems.map((item) => (
@@ -27,7 +27,7 @@ export function Sidebar() {
                 variant={pathname === item.href ? "secondary" : "ghost"}
                 className={cn(
                   "w-full justify-start gap-3",
-                  pathname === item.href && "bg-secondary",
+                  pathname === item.href && "bg-secondary"
                 )}
               >
                 <item.icon className="h-5 w-5" />
@@ -38,9 +38,9 @@ export function Sidebar() {
         </nav>
 
         {/* Quick Stats or Suggestions could go here */}
-        <div className="p-4 bg-muted/50 rounded-lg">
-          <h3 className="font-semibold text-sm mb-2">Welcome to NRL Society</h3>
-          <p className="text-xs text-muted-foreground">
+        <div className="bg-muted/50 rounded-lg p-4">
+          <h3 className="mb-2 text-sm font-semibold">Welcome to NRL Society</h3>
+          <p className="text-muted-foreground text-xs">
             Connect with friends, share your thoughts, and discover new content.
           </p>
         </div>

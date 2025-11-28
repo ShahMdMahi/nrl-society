@@ -53,15 +53,15 @@ export function Navbar({ user }: NavbarProps) {
   };
 
   return (
-    <header className="sticky top-0 z-50 w-full border-b bg-background/95 backdrop-blur supports-backdrop-filter:bg-background/60">
+    <header className="bg-background/95 supports-backdrop-filter:bg-background/60 sticky top-0 z-50 w-full border-b backdrop-blur">
       <div className="container flex h-14 items-center">
         {/* Logo */}
         <Link href="/feed" className="mr-6 flex items-center space-x-2">
-          <span className="font-bold text-xl">NRL Society</span>
+          <span className="text-xl font-bold">NRL Society</span>
         </Link>
 
         {/* Desktop Navigation */}
-        <nav className="hidden md:flex items-center space-x-1 flex-1 justify-center">
+        <nav className="hidden flex-1 items-center justify-center space-x-1 md:flex">
           {navItems.map((item) => (
             <Link key={item.href} href={item.href}>
               <Button
@@ -69,7 +69,7 @@ export function Navbar({ user }: NavbarProps) {
                 size="sm"
                 className={cn(
                   "gap-2",
-                  pathname === item.href && "bg-secondary",
+                  pathname === item.href && "bg-secondary"
                 )}
               >
                 <item.icon className="h-5 w-5" />
@@ -80,7 +80,7 @@ export function Navbar({ user }: NavbarProps) {
         </nav>
 
         {/* User Menu (Desktop) */}
-        <div className="hidden md:flex items-center space-x-2 ml-auto">
+        <div className="ml-auto hidden items-center space-x-2 md:flex">
           {user ? (
             <DropdownMenu>
               <DropdownMenuTrigger asChild>
@@ -112,7 +112,7 @@ export function Navbar({ user }: NavbarProps) {
                   </Avatar>
                   <div className="flex flex-col">
                     <p className="text-sm font-medium">{user.displayName}</p>
-                    <p className="text-xs text-muted-foreground">
+                    <p className="text-muted-foreground text-xs">
                       @{user.username}
                     </p>
                   </div>
@@ -157,15 +157,15 @@ export function Navbar({ user }: NavbarProps) {
 
         {/* Mobile Menu */}
         <Sheet>
-          <SheetTrigger asChild className="md:hidden ml-auto">
+          <SheetTrigger asChild className="ml-auto md:hidden">
             <Button variant="ghost" size="icon">
               <Menu className="h-5 w-5" />
             </Button>
           </SheetTrigger>
           <SheetContent side="right" className="w-72">
-            <div className="flex flex-col space-y-4 mt-4">
+            <div className="mt-4 flex flex-col space-y-4">
               {user && (
-                <div className="flex items-center gap-3 p-2 border-b pb-4">
+                <div className="flex items-center gap-3 border-b p-2 pb-4">
                   <Avatar className="h-10 w-10">
                     <AvatarImage
                       src={user.avatarUrl || undefined}
@@ -177,7 +177,7 @@ export function Navbar({ user }: NavbarProps) {
                   </Avatar>
                   <div>
                     <p className="font-medium">{user.displayName}</p>
-                    <p className="text-sm text-muted-foreground">
+                    <p className="text-muted-foreground text-sm">
                       @{user.username}
                     </p>
                   </div>
@@ -222,7 +222,7 @@ export function Navbar({ user }: NavbarProps) {
                   </div>
                   <Button
                     variant="ghost"
-                    className="w-full justify-start gap-3 text-destructive"
+                    className="text-destructive w-full justify-start gap-3"
                     onClick={handleLogout}
                   >
                     <LogOut className="h-5 w-5" />

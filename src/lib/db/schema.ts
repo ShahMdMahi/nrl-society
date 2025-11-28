@@ -33,7 +33,7 @@ export const users = sqliteTable(
   (table) => [
     index("idx_users_email").on(table.email),
     index("idx_users_username").on(table.username),
-  ],
+  ]
 );
 
 // Posts table
@@ -64,7 +64,7 @@ export const posts = sqliteTable(
   (table) => [
     index("idx_posts_user_id").on(table.userId),
     index("idx_posts_created_at").on(table.createdAt),
-  ],
+  ]
 );
 
 // Comments table
@@ -87,7 +87,7 @@ export const comments = sqliteTable(
       .notNull()
       .default(sql`(unixepoch())`),
   },
-  (table) => [index("idx_comments_post_id").on(table.postId)],
+  (table) => [index("idx_comments_post_id").on(table.postId)]
 );
 
 // Likes table (polymorphic - for posts and comments)
@@ -111,9 +111,9 @@ export const likes = sqliteTable(
     uniqueIndex("idx_likes_unique").on(
       table.userId,
       table.targetType,
-      table.targetId,
+      table.targetId
     ),
-  ],
+  ]
 );
 
 // Friendships table
@@ -143,9 +143,9 @@ export const friendships = sqliteTable(
     index("idx_friendships_users").on(table.requesterId, table.addresseeId),
     uniqueIndex("idx_friendships_unique").on(
       table.requesterId,
-      table.addresseeId,
+      table.addresseeId
     ),
-  ],
+  ]
 );
 
 // Conversations table
@@ -178,7 +178,7 @@ export const conversationParticipants = sqliteTable(
   (table) => [
     index("idx_participants_conversation").on(table.conversationId),
     index("idx_participants_user").on(table.userId),
-  ],
+  ]
 );
 
 // Messages table
@@ -204,9 +204,9 @@ export const messages = sqliteTable(
   (table) => [
     index("idx_messages_conversation").on(
       table.conversationId,
-      table.createdAt,
+      table.createdAt
     ),
-  ],
+  ]
 );
 
 // Notifications table
@@ -243,7 +243,7 @@ export const notifications = sqliteTable(
   (table) => [
     index("idx_notifications_user").on(table.userId, table.createdAt),
     index("idx_notifications_unread").on(table.userId, table.isRead),
-  ],
+  ]
 );
 
 // Sessions table (for auth)
@@ -262,7 +262,7 @@ export const sessions = sqliteTable(
   (table) => [
     index("idx_sessions_user").on(table.userId),
     index("idx_sessions_expires").on(table.expiresAt),
-  ],
+  ]
 );
 
 // Type exports for use in application

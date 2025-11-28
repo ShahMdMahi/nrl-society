@@ -32,8 +32,8 @@ export async function GET(request: NextRequest, context: RouteContext) {
       .where(
         and(
           eq(conversationParticipants.conversationId, conversationId),
-          eq(conversationParticipants.userId, currentUser.id),
-        ),
+          eq(conversationParticipants.userId, currentUser.id)
+        )
       )
       .limit(1);
 
@@ -41,7 +41,7 @@ export async function GET(request: NextRequest, context: RouteContext) {
       return error(
         "FORBIDDEN",
         "You are not a participant of this conversation",
-        403,
+        403
       );
     }
 
@@ -87,7 +87,7 @@ export async function GET(request: NextRequest, context: RouteContext) {
       {
         cursor: hasMore ? items[0].createdAt.toISOString() : undefined,
         hasMore,
-      },
+      }
     );
   } catch (err) {
     console.error("Get messages error:", err);
@@ -114,7 +114,7 @@ export async function POST(request: NextRequest, context: RouteContext) {
       return error(
         "INVALID_REQUEST",
         "Message content or media is required",
-        400,
+        400
       );
     }
 
@@ -127,8 +127,8 @@ export async function POST(request: NextRequest, context: RouteContext) {
       .where(
         and(
           eq(conversationParticipants.conversationId, conversationId),
-          eq(conversationParticipants.userId, currentUser.id),
-        ),
+          eq(conversationParticipants.userId, currentUser.id)
+        )
       )
       .limit(1);
 
@@ -136,7 +136,7 @@ export async function POST(request: NextRequest, context: RouteContext) {
       return error(
         "FORBIDDEN",
         "You are not a participant of this conversation",
-        403,
+        403
       );
     }
 

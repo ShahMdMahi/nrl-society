@@ -85,8 +85,8 @@ export async function GET(request: NextRequest, { params }: RouteParams) {
           and(
             eq(likes.userId, userId),
             eq(likes.targetType, "post"),
-            eq(likes.targetId, postId),
-          ),
+            eq(likes.targetId, postId)
+          )
         )
         .limit(1);
       isLiked = !!like;
@@ -138,7 +138,7 @@ export async function PATCH(request: NextRequest, { params }: RouteParams) {
     // Validate request body
     const { data, errors: validationErrors } = await validateBody(
       request,
-      updatePostSchema,
+      updatePostSchema
     );
 
     if (validationErrors) {

@@ -10,7 +10,7 @@ export default async function FeedPage() {
 
   return (
     <div className="w-full">
-      <h1 className="text-2xl font-bold mb-6">Home Feed</h1>
+      <h1 className="mb-6 text-2xl font-bold">Home Feed</h1>
       <FeedClient
         user={{
           displayName: user.displayName,

@@ -44,7 +44,7 @@ export async function POST(request: NextRequest) {
       return error(
         "INVALID_FILE_TYPE",
         "File type not allowed. Allowed: JPEG, PNG, GIF, WebP images and MP4, WebM videos",
-        400,
+        400
       );
     }
 
@@ -55,7 +55,7 @@ export async function POST(request: NextRequest) {
       return error(
         "FILE_TOO_LARGE",
         `File size exceeds ${maxSizeMB}MB limit`,
-        400,
+        400
       );
     }
 

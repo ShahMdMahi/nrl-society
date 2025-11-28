@@ -56,10 +56,10 @@ export default async function ProfilePage({ params }: ProfilePageProps) {
       and(
         or(
           eq(friendships.requesterId, userId),
-          eq(friendships.addresseeId, userId),
+          eq(friendships.addresseeId, userId)
         ),
-        eq(friendships.status, "accepted"),
-      ),
+        eq(friendships.status, "accepted")
+      )
     );
 
   // Get user's posts
@@ -101,23 +101,23 @@ export default async function ProfilePage({ params }: ProfilePageProps) {
   return (
     <div className="w-full">
       {/* Cover Photo */}
-      <div className="h-48 bg-linear-to-r from-primary/20 to-primary/40 rounded-t-lg relative">
+      <div className="from-primary/20 to-primary/40 relative h-48 rounded-t-lg bg-linear-to-r">
         {user.coverUrl && (
           <Image
             src={user.coverUrl}
             alt="Cover photo"
             fill
-            className="object-cover rounded-t-lg"
+            className="rounded-t-lg object-cover"
             unoptimized
           />
         )}
       </div>
 
       {/* Profile Info */}
-      <div className="relative px-4 pb-4 bg-background border-x border-b rounded-b-lg">
+      <div className="bg-background relative rounded-b-lg border-x border-b px-4 pb-4">
         <div className="flex flex-col sm:flex-row sm:items-end sm:justify-between">
-          <div className="flex flex-col sm:flex-row sm:items-end gap-4">
-            <Avatar className="h-32 w-32 -mt-16 border-4 border-background">
+          <div className="flex flex-col gap-4 sm:flex-row sm:items-end">
+            <Avatar className="border-background -mt-16 h-32 w-32 border-4">
               <AvatarImage
                 src={user.avatarUrl || undefined}
                 alt={user.displayName}
@@ -130,7 +130,7 @@ export default async function ProfilePage({ params }: ProfilePageProps) {
               <div className="flex items-center gap-2">
                 <h1 className="text-2xl font-bold">{user.displayName}</h1>
                 {user.isVerified && (
-                  <BadgeCheck className="h-6 w-6 text-primary fill-primary" />
+                  <BadgeCheck className="text-primary fill-primary h-6 w-6" />
                 )}
               </div>
               <p className="text-muted-foreground">@{user.username}</p>
@@ -149,7 +149,7 @@ export default async function ProfilePage({ params }: ProfilePageProps) {
         {user.bio && <p className="mt-4 text-sm">{user.bio}</p>}
 
         {/* Meta info */}
-        <div className="flex flex-wrap gap-4 mt-4 text-sm text-muted-foreground">
+        <div className="text-muted-foreground mt-4 flex flex-wrap gap-4 text-sm">
           <div className="flex items-center gap-1">
             <Calendar className="h-4 w-4" />
             <span>Joined {format(user.createdAt, "MMMM yyyy")}</span>
@@ -157,7 +157,7 @@ export default async function ProfilePage({ params }: ProfilePageProps) {
         </div>
 
         {/* Stats */}
-        <div className="flex gap-6 mt-4 text-sm">
+        <div className="mt-4 flex gap-6 text-sm">
           <div>
             <span className="font-bold">{postCount?.count ?? 0}</span>{" "}
             <span className="text-muted-foreground">Posts</span>
@@ -176,9 +176,9 @@ export default async function ProfilePage({ params }: ProfilePageProps) {
           <TabsTrigger value="photos">Photos</TabsTrigger>
           <TabsTrigger value="friends">Friends</TabsTrigger>
         </TabsList>
-        <TabsContent value="posts" className="space-y-4 mt-4">
+        <TabsContent value="posts" className="mt-4 space-y-4">
           {postsData.length === 0 ? (
-            <div className="text-center py-12 text-muted-foreground">
+            <div className="text-muted-foreground py-12 text-center">
               <p>No posts yet</p>
             </div>
           ) : (
@@ -186,12 +186,12 @@ export default async function ProfilePage({ params }: ProfilePageProps) {
           )}
         </TabsContent>
         <TabsContent value="photos" className="mt-4">
-          <div className="text-center py-12 text-muted-foreground">
+          <div className="text-muted-foreground py-12 text-center">
             <p>No photos yet</p>
           </div>
         </TabsContent>
         <TabsContent value="friends" className="mt-4">
-          <div className="text-center py-12 text-muted-foreground">
+          <div className="text-muted-foreground py-12 text-center">
             <p>Friends list coming soon</p>
           </div>
         </TabsContent>

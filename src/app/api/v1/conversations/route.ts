@@ -97,7 +97,7 @@ export async function GET(request: NextRequest) {
               }
             : null,
         };
-      }),
+      })
     );
 
     return success(result, {
@@ -121,7 +121,7 @@ export async function POST(request: NextRequest) {
       return error(
         "UNAUTHORIZED",
         "Please log in to create conversations",
-        401,
+        401
       );
     }
 
@@ -135,20 +135,20 @@ export async function POST(request: NextRequest) {
       return error(
         "INVALID_REQUEST",
         "At least one participant is required",
-        400,
+        400
       );
     }
 
     // Remove duplicates and current user from participants
     const uniqueParticipants = [...new Set(body.participantIds)].filter(
-      (id) => id !== currentUser.id,
+      (id) => id !== currentUser.id
     );
 
     if (uniqueParticipants.length === 0) {
       return error(
         "INVALID_REQUEST",
         "Cannot create conversation with only yourself",
-        400,
+        400
       );
     }
 
@@ -173,14 +173,14 @@ export async function POST(request: NextRequest) {
           conversations,
           and(
             eq(conversations.id, conversationParticipants.conversationId),
-            eq(conversations.type, "direct"),
-          ),
+            eq(conversations.type, "direct")
+          )
         )
         .where(
           inArray(conversationParticipants.userId, [
             currentUser.id,
             uniqueParticipants[0],
-          ]),
+          ])
         )
         .groupBy(conversationParticipants.conversationId)
         .having(sql`count(${conversationParticipants.userId}) = 2`);

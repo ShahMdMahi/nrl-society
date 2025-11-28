@@ -15,7 +15,7 @@ export interface KVOptions {
  */
 export async function kvGet<T = string>(
   key: string,
-  options?: { type?: "text" | "json" | "arrayBuffer" | "stream" },
+  options?: { type?: "text" | "json" | "arrayBuffer" | "stream" }
 ): Promise<T | null> {
   const { env } = await getCloudflareContext();
   const appEnv = env as AppEnv;
@@ -34,7 +34,7 @@ export async function kvGet<T = string>(
 export async function kvSet(
   key: string,
   value: string | object,
-  options?: KVOptions,
+  options?: KVOptions
 ): Promise<void> {
   const { env } = await getCloudflareContext();
   const appEnv = env as AppEnv;
@@ -80,7 +80,7 @@ export async function cacheGet<T = string>(key: string): Promise<T | null> {
 export async function cacheSet(
   key: string,
   value: object,
-  ttlSeconds: number = 3600,
+  ttlSeconds: number = 3600
 ): Promise<void> {
   const { env } = await getCloudflareContext();
   const appEnv = env as AppEnv;

@@ -70,7 +70,7 @@ export default function FriendsPage() {
         const accepted = pendingRequests.find((r) => r.requesterId === userId);
         if (accepted) {
           setPendingRequests((prev) =>
-            prev.filter((r) => r.requesterId !== userId),
+            prev.filter((r) => r.requesterId !== userId)
           );
           setFriends((prev) => [...prev, { ...accepted, friendId: userId }]);
         }
@@ -89,7 +89,7 @@ export default function FriendsPage() {
 
       if (data.success) {
         setPendingRequests((prev) =>
-          prev.filter((r) => r.requesterId !== userId),
+          prev.filter((r) => r.requesterId !== userId)
         );
       }
     } catch (error) {
@@ -129,7 +129,7 @@ export default function FriendsPage() {
 
   if (isLoading) {
     return (
-      <div className="max-w-2xl mx-auto space-y-4">
+      <div className="mx-auto max-w-2xl space-y-4">
         <Card>
           <CardHeader>
             <Skeleton className="h-8 w-40" />
@@ -162,7 +162,7 @@ export default function FriendsPage() {
         </CardHeader>
         <CardContent>
           <Tabs defaultValue="friends">
-            <TabsList className="w-full justify-start mb-4">
+            <TabsList className="mb-4 w-full justify-start">
               <TabsTrigger value="friends" className="flex gap-2">
                 <Users className="h-4 w-4" />
                 Friends ({friends.length})
@@ -178,8 +178,8 @@ export default function FriendsPage() {
 
             <TabsContent value="friends">
               {friends.length === 0 ? (
-                <div className="text-center py-8 text-muted-foreground">
-                  <Users className="h-12 w-12 mx-auto mb-4 opacity-50" />
+                <div className="text-muted-foreground py-8 text-center">
+                  <Users className="mx-auto mb-4 h-12 w-12 opacity-50" />
                   <p>No friends yet</p>
                   <p className="text-sm">
                     Connect with people to add them as friends
@@ -190,7 +190,7 @@ export default function FriendsPage() {
                   {friends.map((friend) => (
                     <div
                       key={friend.friendId}
-                      className="flex items-center gap-3 p-3 rounded-lg hover:bg-muted/50"
+                      className="hover:bg-muted/50 flex items-center gap-3 rounded-lg p-3"
                     >
                       <Link href={`/profile/${friend.friendId}`}>
                         <Avatar className="h-12 w-12">
@@ -210,7 +210,7 @@ export default function FriendsPage() {
                         >
                           {friend.displayName}
                         </Link>
-                        <p className="text-sm text-muted-foreground">
+                        <p className="text-muted-foreground text-sm">
                           @{friend.username}
                         </p>
                       </div>
@@ -219,7 +219,7 @@ export default function FriendsPage() {
                         size="sm"
                         onClick={() => removeFriend(friend.friendId!)}
                       >
-                        <UserMinus className="h-4 w-4 mr-2" />
+                        <UserMinus className="mr-2 h-4 w-4" />
                         Remove
                       </Button>
                     </div>
@@ -230,8 +230,8 @@ export default function FriendsPage() {
 
             <TabsContent value="pending">
               {pendingRequests.length === 0 ? (
-                <div className="text-center py-8 text-muted-foreground">
-                  <UserPlus className="h-12 w-12 mx-auto mb-4 opacity-50" />
+                <div className="text-muted-foreground py-8 text-center">
+                  <UserPlus className="mx-auto mb-4 h-12 w-12 opacity-50" />
                   <p>No pending requests</p>
                 </div>
               ) : (
@@ -239,7 +239,7 @@ export default function FriendsPage() {
                   {pendingRequests.map((request) => (
                     <div
                       key={request.requesterId}
-                      className="flex items-center gap-3 p-3 rounded-lg hover:bg-muted/50"
+                      className="hover:bg-muted/50 flex items-center gap-3 rounded-lg p-3"
                     >
                       <Link href={`/profile/${request.requesterId}`}>
                         <Avatar className="h-12 w-12">
@@ -259,7 +259,7 @@ export default function FriendsPage() {
                         >
                           {request.displayName}
                         </Link>
-                        <p className="text-sm text-muted-foreground">
+                        <p className="text-muted-foreground text-sm">
                           @{request.username}
                         </p>
                       </div>
@@ -268,7 +268,7 @@ export default function FriendsPage() {
                           size="sm"
                           onClick={() => acceptRequest(request.requesterId!)}
                         >
-                          <Check className="h-4 w-4 mr-2" />
+                          <Check className="mr-2 h-4 w-4" />
                           Accept
                         </Button>
                         <Button
@@ -287,8 +287,8 @@ export default function FriendsPage() {
 
             <TabsContent value="sent">
               {sentRequests.length === 0 ? (
-                <div className="text-center py-8 text-muted-foreground">
-                  <UserPlus className="h-12 w-12 mx-auto mb-4 opacity-50" />
+                <div className="text-muted-foreground py-8 text-center">
+                  <UserPlus className="mx-auto mb-4 h-12 w-12 opacity-50" />
                   <p>No sent requests</p>
                 </div>
               ) : (
@@ -296,7 +296,7 @@ export default function FriendsPage() {
                   {sentRequests.map((request) => (
                     <div
                       key={request.addresseeId}
-                      className="flex items-center gap-3 p-3 rounded-lg hover:bg-muted/50"
+                      className="hover:bg-muted/50 flex items-center gap-3 rounded-lg p-3"
                     >
                       <Link href={`/profile/${request.addresseeId}`}>
                         <Avatar className="h-12 w-12">
@@ -316,7 +316,7 @@ export default function FriendsPage() {
                         >
                           {request.displayName}
                         </Link>
-                        <p className="text-sm text-muted-foreground">
+                        <p className="text-muted-foreground text-sm">
                           @{request.username}
                         </p>
                       </div>

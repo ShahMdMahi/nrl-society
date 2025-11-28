@@ -77,7 +77,7 @@ export function PostComposer({ user, onPostCreated }: PostComposerProps) {
               placeholder="What's on your mind?"
               value={content}
               onChange={handleTextareaChange}
-              className="min-h-20 resize-none border-0 focus-visible:ring-0 p-0 text-base"
+              className="min-h-20 resize-none border-0 p-0 text-base focus-visible:ring-0"
               disabled={isLoading}
             />
             <div className="flex items-center justify-between border-t pt-3">
@@ -88,7 +88,7 @@ export function PostComposer({ user, onPostCreated }: PostComposerProps) {
                   className="h-9 w-9"
                   disabled
                 >
-                  <ImageIcon className="h-5 w-5 text-muted-foreground" />
+                  <ImageIcon className="text-muted-foreground h-5 w-5" />
                 </Button>
                 <Button
                   variant="ghost"
@@ -96,7 +96,7 @@ export function PostComposer({ user, onPostCreated }: PostComposerProps) {
                   className="h-9 w-9"
                   disabled
                 >
-                  <Video className="h-5 w-5 text-muted-foreground" />
+                  <Video className="text-muted-foreground h-5 w-5" />
                 </Button>
                 <Button
                   variant="ghost"
@@ -104,7 +104,7 @@ export function PostComposer({ user, onPostCreated }: PostComposerProps) {
                   className="h-9 w-9"
                   disabled
                 >
-                  <Smile className="h-5 w-5 text-muted-foreground" />
+                  <Smile className="text-muted-foreground h-5 w-5" />
                 </Button>
               </div>
               <Button

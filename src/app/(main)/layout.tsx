@@ -16,12 +16,12 @@ export default async function MainLayout({
   }
 
   return (
-    <div className="min-h-screen bg-background">
+    <div className="bg-background min-h-screen">
       <Navbar user={user} />
-      <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8 py-6">
+      <div className="mx-auto max-w-7xl px-4 py-6 sm:px-6 lg:px-8">
         <div className="flex gap-6">
           <Sidebar />
-          <main className="flex-1 min-w-0 flex justify-center">
+          <main className="flex min-w-0 flex-1 justify-center">
             <div className="w-full max-w-3xl">{children}</div>
           </main>
         </div>

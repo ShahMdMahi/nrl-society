@@ -19,7 +19,7 @@ export async function POST(request: NextRequest) {
     // Validate request body
     const { data, errors: validationErrors } = await validateBody(
       request,
-      loginSchema,
+      loginSchema
     );
 
     if (validationErrors) {
@@ -41,7 +41,7 @@ export async function POST(request: NextRequest) {
       return error(
         ErrorCodes.INVALID_CREDENTIALS,
         "Invalid email or password",
-        401,
+        401
       );
     }
 
@@ -52,7 +52,7 @@ export async function POST(request: NextRequest) {
       return error(
         ErrorCodes.INVALID_CREDENTIALS,
         "Invalid email or password",
-        401,
+        401
       );
     }
 

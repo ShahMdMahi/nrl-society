@@ -18,7 +18,7 @@ export async function POST(_request: NextRequest, context: RouteContext) {
       return error(
         "UNAUTHORIZED",
         "Please log in to send friend requests",
-        401,
+        401
       );
     }
 
@@ -28,7 +28,7 @@ export async function POST(_request: NextRequest, context: RouteContext) {
       return error(
         "INVALID_REQUEST",
         "Cannot send friend request to yourself",
-        400,
+        400
       );
     }
 
@@ -53,13 +53,13 @@ export async function POST(_request: NextRequest, context: RouteContext) {
         or(
           and(
             eq(friendships.requesterId, currentUser.id),
-            eq(friendships.addresseeId, userId),
+            eq(friendships.addresseeId, userId)
           ),
           and(
             eq(friendships.requesterId, userId),
-            eq(friendships.addresseeId, currentUser.id),
-          ),
-        ),
+            eq(friendships.addresseeId, currentUser.id)
+          )
+        )
       )
       .limit(1);
 
@@ -69,7 +69,7 @@ export async function POST(_request: NextRequest, context: RouteContext) {
         return error(
           "ALREADY_FRIENDS",
           "You are already friends with this user",
-          400,
+          400
         );
       }
       if (friendship.status === "pending") {
@@ -138,13 +138,13 @@ export async function DELETE(_request: NextRequest, context: RouteContext) {
         or(
           and(
             eq(friendships.requesterId, currentUser.id),
-            eq(friendships.addresseeId, userId),
+            eq(friendships.addresseeId, userId)
           ),
           and(
             eq(friendships.requesterId, userId),
-            eq(friendships.addresseeId, currentUser.id),
-          ),
-        ),
+            eq(friendships.addresseeId, currentUser.id)
+          )
+        )
       )
       .limit(1);
 

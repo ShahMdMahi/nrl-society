@@ -63,8 +63,8 @@ export async function GET(request: NextRequest) {
       .where(
         and(
           eq(notifications.userId, currentUser.id),
-          eq(notifications.isRead, false),
-        ),
+          eq(notifications.isRead, false)
+        )
       );
 
     return success(
@@ -78,7 +78,7 @@ export async function GET(request: NextRequest) {
           : undefined,
         hasMore,
         total: unreadCount?.count ?? 0,
-      },
+      }
     );
   } catch (err) {
     console.error("Get notifications error:", err);
@@ -95,7 +95,7 @@ export async function PUT(request: NextRequest) {
       return error(
         "UNAUTHORIZED",
         "Please log in to manage notifications",
-        401,
+        401
       );
     }
 
@@ -110,8 +110,8 @@ export async function PUT(request: NextRequest) {
         .where(
           and(
             eq(notifications.userId, currentUser.id),
-            eq(notifications.isRead, false),
-          ),
+            eq(notifications.isRead, false)
+          )
         );
 
       return success({ message: "All notifications marked as read" });
@@ -126,8 +126,8 @@ export async function PUT(request: NextRequest) {
           .where(
             and(
               eq(notifications.id, id),
-              eq(notifications.userId, currentUser.id),
-            ),
+              eq(notifications.userId, currentUser.id)
+            )
           );
       }
 
@@ -137,7 +137,7 @@ export async function PUT(request: NextRequest) {
     return error(
       "INVALID_REQUEST",
       "Provide notification IDs or set all to true",
-      400,
+      400
     );
   } catch (err) {
     console.error("Mark notifications read error:", err);
@@ -154,7 +154,7 @@ export async function DELETE(request: NextRequest) {
       return error(
         "UNAUTHORIZED",
         "Please log in to manage notifications",
-        401,
+        401
       );
     }
 
@@ -180,8 +180,8 @@ export async function DELETE(request: NextRequest) {
         .where(
           and(
             eq(notifications.id, id),
-            eq(notifications.userId, currentUser.id),
-          ),
+            eq(notifications.userId, currentUser.id)
+          )
         );
 
       return success({ message: "Notification deleted" });
@@ -190,7 +190,7 @@ export async function DELETE(request: NextRequest) {
     return error(
       "INVALID_REQUEST",
       "Provide notification ID or set all to true",
-      400,
+      400
     );
   } catch (err) {
     console.error("Delete notifications error:", err);

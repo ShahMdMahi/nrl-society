@@ -64,8 +64,8 @@ export async function POST(request: NextRequest, { params }: RouteParams) {
         and(
           eq(likes.userId, userId),
           eq(likes.targetType, "post"),
-          eq(likes.targetId, postId),
-        ),
+          eq(likes.targetId, postId)
+        )
       )
       .limit(1);
 
@@ -73,7 +73,7 @@ export async function POST(request: NextRequest, { params }: RouteParams) {
       return error(
         ErrorCodes.ALREADY_EXISTS,
         "You have already liked this post",
-        409,
+        409
       );
     }
 
@@ -155,8 +155,8 @@ export async function DELETE(request: NextRequest, { params }: RouteParams) {
         and(
           eq(likes.userId, userId),
           eq(likes.targetType, "post"),
-          eq(likes.targetId, postId),
-        ),
+          eq(likes.targetId, postId)
+        )
       )
       .limit(1);
 
@@ -171,8 +171,8 @@ export async function DELETE(request: NextRequest, { params }: RouteParams) {
         and(
           eq(likes.userId, userId),
           eq(likes.targetType, "post"),
-          eq(likes.targetId, postId),
-        ),
+          eq(likes.targetId, postId)
+        )
       );
 
     // Decrement likes count
