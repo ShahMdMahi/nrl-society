@@ -126,7 +126,12 @@ export async function GET(request: NextRequest) {
     });
   } catch (err) {
     console.error("Get feed error:", err);
-    return serverError("Failed to get feed");
+    // Include error details in development
+    const errorMessage =
+      err instanceof Error ? err.message : "Failed to get feed";
+    const errorStack = err instanceof Error ? err.stack : undefined;
+    console.error("Error stack:", errorStack);
+    return serverError(errorMessage);
   }
 }
 
