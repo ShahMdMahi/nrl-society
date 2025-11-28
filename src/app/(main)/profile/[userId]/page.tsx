@@ -99,7 +99,7 @@ export default async function ProfilePage({ params }: ProfilePageProps) {
   }));
 
   return (
-    <div className="max-w-3xl mx-auto">
+    <div className="w-full">
       {/* Cover Photo */}
       <div className="h-48 bg-linear-to-r from-primary/20 to-primary/40 rounded-t-lg relative">
         {user.coverUrl && (

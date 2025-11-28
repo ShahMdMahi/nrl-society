@@ -21,7 +21,9 @@ export default async function MainLayout({
       <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8 py-6">
         <div className="flex gap-6">
           <Sidebar />
-          <main className="flex-1 min-w-0">{children}</main>
+          <main className="flex-1 min-w-0 flex justify-center">
+            <div className="w-full max-w-3xl">{children}</div>
+          </main>
         </div>
       </div>
     </div>

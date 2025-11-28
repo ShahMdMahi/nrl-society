@@ -9,7 +9,7 @@ export default async function FeedPage() {
   }
 
   return (
-    <div className="max-w-2xl mx-auto">
+    <div className="w-full">
       <h1 className="text-2xl font-bold mb-6">Home Feed</h1>
       <FeedClient
         user={{

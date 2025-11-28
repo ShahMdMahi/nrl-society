@@ -176,7 +176,7 @@ export default function MessagesPage() {
   }
 
   return (
-    <div className="h-[calc(100vh-8rem)] flex gap-4">
+    <div className="w-full h-[calc(100vh-8rem)] flex gap-4">
       {/* Conversations List */}
       <Card
         className={cn(

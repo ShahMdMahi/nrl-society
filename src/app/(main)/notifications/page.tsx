@@ -144,7 +144,7 @@ export default function NotificationsPage() {
   }
 
   return (
-    <div className="max-w-2xl mx-auto space-y-4">
+    <div className="w-full space-y-4">
       <Card>
         <CardHeader className="flex flex-row items-center justify-between">
           <div className="flex items-center gap-2">
