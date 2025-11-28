@@ -12,7 +12,7 @@ import {
   validateBody,
   validateParams,
 } from "@/lib/api";
-import { eq, desc, lt, and, inArray } from "drizzle-orm";
+import { eq, desc, lt, and, inArray, or, isNull } from "drizzle-orm";
 
 // GET /api/v1/posts - Get feed (paginated)
 export async function GET(request: NextRequest) {
@@ -49,13 +49,11 @@ export async function GET(request: NextRequest) {
 
     const db = await getDB();
 
-    // Build query conditions
-    const conditions = [eq(posts.visibility, "public")];
-
-    if (cursor) {
-      // Cursor is the createdAt timestamp of the last post
-      conditions.push(lt(posts.createdAt, new Date(parseInt(cursor))));
-    }
+    // Build query conditions - include posts with visibility 'public' or NULL (default)
+    const visibilityCondition = or(
+      eq(posts.visibility, "public"),
+      isNull(posts.visibility)
+    );
 
     // Get posts with author info
     const feedPosts = await db
@@ -78,7 +76,14 @@ export async function GET(request: NextRequest) {
       })
       .from(posts)
       .innerJoin(users, eq(posts.userId, users.id))
-      .where(and(...conditions))
+      .where(
+        cursor
+          ? and(
+              visibilityCondition,
+              lt(posts.createdAt, new Date(parseInt(cursor)))
+            )
+          : visibilityCondition
+      )
       .orderBy(desc(posts.createdAt))
       .limit(limit + 1); // Fetch one extra to check if there's more
 
