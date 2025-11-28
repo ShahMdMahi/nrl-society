@@ -23,12 +23,14 @@
 ## 1. Prerequisites
 
 ### What You Need
+
 - Node.js 18+ installed
 - pnpm package manager (`npm install -g pnpm`)
 - A Cloudflare account (free tier works!)
 - Git installed
 
 ### Cloudflare Free Tier Limits
+
 | Service | Free Tier Limit |
 |---------|----------------|
 | Workers | 100,000 requests/day |
@@ -42,11 +44,13 @@
 ## 2. Cloudflare Account Setup
 
 ### Step 1: Create Account
+
 1. Go to [dash.cloudflare.com](https://dash.cloudflare.com)
 2. Sign up with email or continue with Google/GitHub
 3. Verify your email address
 
 ### Step 2: Get Your Account ID
+
 1. In dashboard, click on **Workers & Pages** in sidebar
 2. Your **Account ID** is shown on the right side
 3. Save this ID - you'll need it later
@@ -58,6 +62,7 @@
 ## 3. Install Required Tools
 
 ### Install Wrangler CLI
+
 ```bash
 # Install globally
 npm install -g wrangler
@@ -67,12 +72,15 @@ npx wrangler --version
 ```
 
 ### Login to Cloudflare
+
 ```bash
 npx wrangler login
 ```
+
 This opens your browser to authorize Wrangler.
 
 ### Verify Login
+
 ```bash
 npx wrangler whoami
 ```
@@ -82,6 +90,7 @@ npx wrangler whoami
 ## 4. Create Cloudflare Resources
 
 Navigate to your project directory first:
+
 ```bash
 cd c:\Users\shahm\Desktop\2025\nrl-society
 ```
@@ -89,39 +98,49 @@ cd c:\Users\shahm\Desktop\2025\nrl-society
 ### 4.1 Create D1 Databases
 
 #### Main Database (for user data, posts, etc.)
+
 ```bash
 npx wrangler d1 create nrl-society-db
 ```
+
 **Output:** Database ID = `a40ffbda-e921-4c16-8dc7-580f955dd5eb`
 
 #### Tag Cache Database (for Next.js ISR caching)
+
 ```bash
 npx wrangler d1 create nrl-society-tag-cache
 ```
+
 **Output:** Database ID = `02e310d3-6b66-40b1-9ffa-c4bca6d80640`
 
 ### 4.2 Create KV Namespaces
 
 #### Sessions KV (for user sessions/auth)
+
 ```bash
 npx wrangler kv namespace create SESSIONS_KV
 ```
+
 **Output:** Namespace ID = `14ddf3302de544fd8f6f1d55b9639a9d`
 
 #### Cache KV (for general caching)
+
 ```bash
 npx wrangler kv namespace create CACHE_KV
 ```
+
 **Output:** Namespace ID = `679369a958ed4cce83c5cc06102b0e5c`
 
 ### 4.3 Create R2 Buckets
 
 #### Media Bucket (for user uploads - images, videos)
+
 ```bash
 npx wrangler r2 bucket create nrl-society-media
 ```
 
 #### Cache Bucket (for Next.js incremental cache)
+
 ```bash
 npx wrangler r2 bucket create nrl-society-cache
 ```
@@ -256,6 +275,7 @@ pnpm run build:worker
 ```
 
 This runs `opennextjs-cloudflare build` which:
+
 1. Builds the Next.js app
 2. Bundles it for Cloudflare Workers
 3. Creates `.open-next/worker.js`
@@ -263,6 +283,7 @@ This runs `opennextjs-cloudflare build` which:
 ### 7.2 Deploy to Cloudflare
 
 **Option A: Direct Deploy (Linux/Mac recommended)**
+
 ```bash
 pnpm run deploy
 ```
@@ -309,6 +330,7 @@ jobs:
 ```
 
 **Setup GitHub Secrets:**
+
 1. Go to GitHub repo → Settings → Secrets → Actions
 2. Add `CLOUDFLARE_API_TOKEN` (create at cloudflare.com/profile/api-tokens)
 3. Add `CLOUDFLARE_ACCOUNT_ID` = `010b79585a07803a496cd9a3bb6cb919`
@@ -316,7 +338,8 @@ jobs:
 ### 7.3 Post-Deploy URL
 
 After deploying, your app will be available at:
-```
+
+```bash
 https://nrl-society.<your-subdomain>.workers.dev
 ```
 
@@ -377,11 +400,13 @@ In R2 bucket settings, add CORS rules:
 ### 10.1 View Logs
 
 **Real-time logs:**
+
 ```bash
 npx wrangler tail
 ```
 
 **In Cloudflare Dashboard:**
+
 1. Go to **Workers & Pages** → **nrl-society**
 2. Click **Logs** tab
 
@@ -404,19 +429,24 @@ npx wrangler tail
 ### Common Issues
 
 #### Issue: "ENOENT: no such file or directory ... resvg.wasm"
+
 **Cause:** Windows + Wrangler bug with WASM files
 **Solution:** Use GitHub Actions to deploy from Linux
 
 #### Issue: "Database not found"
+
 **Solution:** Ensure `database_id` in wrangler.json matches the actual D1 database ID
 
 #### Issue: "KV namespace not found"
+
 **Solution:** Ensure `id` in wrangler.json matches the actual KV namespace ID
 
 #### Issue: "R2 bucket not found"
+
 **Solution:** Ensure `bucket_name` in wrangler.json matches exactly
 
 #### Issue: "Session not working"
+
 **Solution:** Check SESSIONS_KV binding and verify the KV namespace exists
 
 ### Verify Resources Exist
@@ -449,7 +479,7 @@ npx wrangler d1 execute nrl-society-db --remote --file=./migrations/0001_initial
 
 | Resource | Name | ID/Details |
 |----------|------|------------|
-| Account | shahmdmahi24@gmail.com | `010b79585a07803a496cd9a3bb6cb919` |
+| Account | <shahmdmahi24@gmail.com> | `010b79585a07803a496cd9a3bb6cb919` |
 | D1 Database | nrl-society-db | `a40ffbda-e921-4c16-8dc7-580f955dd5eb` |
 | D1 Database | nrl-society-tag-cache | `02e310d3-6b66-40b1-9ffa-c4bca6d80640` |
 | KV Namespace | SESSIONS_KV | `14ddf3302de544fd8f6f1d55b9639a9d` |
