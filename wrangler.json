@@ -1,0 +1,48 @@
+{
+	"$schema": "node_modules/wrangler/config-schema.json",
+	"name": "nrl-society",
+	"main": ".open-next/worker.js",
+	"compatibility_date": "2025-03-25",
+	"compatibility_flags": [
+		"nodejs_compat"
+	],
+	"assets": {
+		"directory": ".open-next/assets",
+		"binding": "ASSETS"
+	},
+	"d1_databases": [
+		{
+			"binding": "DB",
+			"database_name": "nrl-society-db",
+			"database_id": "a40ffbda-e921-4c16-8dc7-580f955dd5eb"
+		},
+		{
+			"binding": "NEXT_TAG_CACHE_D1",
+			"database_name": "nrl-society-tag-cache",
+			"database_id": "02e310d3-6b66-40b1-9ffa-c4bca6d80640"
+		}
+	],
+	"kv_namespaces": [
+		{
+			"binding": "SESSIONS_KV",
+			"id": "14ddf3302de544fd8f6f1d55b9639a9d"
+		},
+		{
+			"binding": "CACHE_KV",
+			"id": "679369a958ed4cce83c5cc06102b0e5c"
+		}
+	],
+	"r2_buckets": [
+		{
+			"binding": "MEDIA_BUCKET",
+			"bucket_name": "nrl-society-media"
+		},
+		{
+			"binding": "NEXT_INC_CACHE_R2_BUCKET",
+			"bucket_name": "nrl-society-cache"
+		}
+	],
+	"vars": {
+		"NODE_ENV": "production"
+	}
+}
