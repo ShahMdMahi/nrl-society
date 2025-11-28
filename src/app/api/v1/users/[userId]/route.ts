@@ -78,10 +78,10 @@ export async function GET(request: NextRequest, { params }: RouteParams) {
         and(
           or(
             eq(friendships.requesterId, userId),
-            eq(friendships.addresseeId, userId)
+            eq(friendships.addresseeId, userId),
           ),
-          eq(friendships.status, "accepted")
-        )
+          eq(friendships.status, "accepted"),
+        ),
       );
 
     // Check friendship status with current user
@@ -93,19 +93,22 @@ export async function GET(request: NextRequest, { params }: RouteParams) {
 
       if (!isOwnProfile) {
         const [friendship] = await db
-          .select({ status: friendships.status, requesterId: friendships.requesterId })
+          .select({
+            status: friendships.status,
+            requesterId: friendships.requesterId,
+          })
           .from(friendships)
           .where(
             or(
               and(
                 eq(friendships.requesterId, currentUserId),
-                eq(friendships.addresseeId, userId)
+                eq(friendships.addresseeId, userId),
               ),
               and(
                 eq(friendships.requesterId, userId),
-                eq(friendships.addresseeId, currentUserId)
-              )
-            )
+                eq(friendships.addresseeId, currentUserId),
+              ),
+            ),
           )
           .limit(1);
 
@@ -168,7 +171,7 @@ export async function PATCH(request: NextRequest, { params }: RouteParams) {
     // Validate request body
     const { data, errors: validationErrors } = await validateBody(
       request,
-      updateProfileSchema
+      updateProfileSchema,
     );
 
     if (validationErrors) {

@@ -9,7 +9,11 @@ export {
   rateLimitError,
   ErrorCodes,
 } from "./response";
-export type { ApiSuccessResponse, ApiErrorResponse, ApiResponse } from "./response";
+export type {
+  ApiSuccessResponse,
+  ApiErrorResponse,
+  ApiResponse,
+} from "./response";
 
 export {
   registerSchema,

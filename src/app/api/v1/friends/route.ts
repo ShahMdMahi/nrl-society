@@ -37,22 +37,22 @@ export async function GET(request: NextRequest) {
           or(
             and(
               eq(friendships.requesterId, currentUser.id),
-              eq(users.id, friendships.addresseeId)
+              eq(users.id, friendships.addresseeId),
             ),
             and(
               eq(friendships.addresseeId, currentUser.id),
-              eq(users.id, friendships.requesterId)
-            )
-          )
+              eq(users.id, friendships.requesterId),
+            ),
+          ),
         )
         .where(
           and(
             or(
               eq(friendships.requesterId, currentUser.id),
-              eq(friendships.addresseeId, currentUser.id)
+              eq(friendships.addresseeId, currentUser.id),
             ),
-            eq(friendships.status, "accepted")
-          )
+            eq(friendships.status, "accepted"),
+          ),
         )
         .orderBy(desc(friendships.createdAt));
 
@@ -74,8 +74,8 @@ export async function GET(request: NextRequest) {
         .where(
           and(
             eq(friendships.addresseeId, currentUser.id),
-            eq(friendships.status, "pending")
-          )
+            eq(friendships.status, "pending"),
+          ),
         )
         .orderBy(desc(friendships.createdAt));
 
@@ -97,8 +97,8 @@ export async function GET(request: NextRequest) {
         .where(
           and(
             eq(friendships.requesterId, currentUser.id),
-            eq(friendships.status, "pending")
-          )
+            eq(friendships.status, "pending"),
+          ),
         )
         .orderBy(desc(friendships.createdAt));
 

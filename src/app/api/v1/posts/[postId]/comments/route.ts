@@ -41,7 +41,7 @@ export async function GET(request: NextRequest, { params }: RouteParams) {
     const { searchParams } = new URL(request.url);
     const { data, errors: validationErrors } = validateParams(
       searchParams,
-      cursorPaginationSchema
+      cursorPaginationSchema,
     );
 
     if (validationErrors) {
@@ -142,7 +142,7 @@ export async function POST(request: NextRequest, { params }: RouteParams) {
     // Validate request body
     const { data, errors: validationErrors } = await validateBody(
       request,
-      createCommentSchema
+      createCommentSchema,
     );
 
     if (validationErrors) {
@@ -155,7 +155,11 @@ export async function POST(request: NextRequest, { params }: RouteParams) {
 
     // Check if post exists
     const [post] = await db
-      .select({ id: posts.id, userId: posts.userId, commentsCount: posts.commentsCount })
+      .select({
+        id: posts.id,
+        userId: posts.userId,
+        commentsCount: posts.commentsCount,
+      })
       .from(posts)
       .where(eq(posts.id, postId))
       .limit(1);
@@ -230,7 +234,7 @@ export async function POST(request: NextRequest, { params }: RouteParams) {
         isOwnComment: true,
       },
       undefined,
-      201
+      201,
     );
   } catch (err) {
     console.error("Create comment error:", err);

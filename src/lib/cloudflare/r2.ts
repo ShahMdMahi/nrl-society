@@ -23,22 +23,22 @@ export interface PresignedUrlOptions {
 export async function uploadFile(
   key: string,
   data: ArrayBuffer | ReadableStream | string,
-  options?: UploadOptions
+  options?: UploadOptions,
 ): Promise<R2Object> {
   const { env } = await getCloudflareContext();
   const appEnv = env as AppEnv;
-  
+
   const result = await appEnv.MEDIA_BUCKET.put(key, data, {
     httpMetadata: options?.contentType
       ? { contentType: options.contentType }
       : undefined,
     customMetadata: options?.customMetadata,
   });
-  
+
   if (!result) {
     throw new Error("Failed to upload file to R2");
   }
-  
+
   return result;
 }
 
@@ -125,19 +125,19 @@ export function getPublicUrl(key: string, bucketUrl: string): string {
 export function generateFileKey(
   userId: string,
   fileName: string,
-  folder?: string
+  folder?: string,
 ): string {
   const timestamp = Date.now();
   const randomSuffix = crypto.randomUUID().slice(0, 8);
   const extension = fileName.split(".").pop() || "";
   const baseName = fileName.replace(/\.[^/.]+$/, "").slice(0, 32);
-  
+
   const key = `${baseName}-${timestamp}-${randomSuffix}.${extension}`;
-  
+
   if (folder) {
     return `${folder}/${userId}/${key}`;
   }
-  
+
   return `${userId}/${key}`;
 }
 
@@ -146,7 +146,7 @@ export function generateFileKey(
  */
 export function validateFileType(
   contentType: string,
-  allowedTypes: string[]
+  allowedTypes: string[],
 ): boolean {
   return allowedTypes.some((type) => {
     if (type.endsWith("/*")) {
@@ -171,7 +171,10 @@ export const ALLOWED_VIDEO_TYPES = [
   "video/quicktime",
 ];
 
-export const ALLOWED_MEDIA_TYPES = [...ALLOWED_IMAGE_TYPES, ...ALLOWED_VIDEO_TYPES];
+export const ALLOWED_MEDIA_TYPES = [
+  ...ALLOWED_IMAGE_TYPES,
+  ...ALLOWED_VIDEO_TYPES,
+];
 
 // Max file sizes (in bytes)
 export const MAX_IMAGE_SIZE = 10 * 1024 * 1024; // 10MB

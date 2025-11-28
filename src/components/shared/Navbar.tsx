@@ -21,11 +21,7 @@ import {
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
-import {
-  Sheet,
-  SheetContent,
-  SheetTrigger,
-} from "@/components/ui/sheet";
+import { Sheet, SheetContent, SheetTrigger } from "@/components/ui/sheet";
 import { cn } from "@/lib/utils";
 
 interface NavbarProps {
@@ -73,7 +69,7 @@ export function Navbar({ user }: NavbarProps) {
                 size="sm"
                 className={cn(
                   "gap-2",
-                  pathname === item.href && "bg-secondary"
+                  pathname === item.href && "bg-secondary",
                 )}
               >
                 <item.icon className="h-5 w-5" />
@@ -88,9 +84,15 @@ export function Navbar({ user }: NavbarProps) {
           {user ? (
             <DropdownMenu>
               <DropdownMenuTrigger asChild>
-                <Button variant="ghost" className="relative h-9 w-9 rounded-full">
+                <Button
+                  variant="ghost"
+                  className="relative h-9 w-9 rounded-full"
+                >
                   <Avatar className="h-9 w-9">
-                    <AvatarImage src={user.avatarUrl || undefined} alt={user.displayName} />
+                    <AvatarImage
+                      src={user.avatarUrl || undefined}
+                      alt={user.displayName}
+                    />
                     <AvatarFallback>
                       {user.displayName.charAt(0).toUpperCase()}
                     </AvatarFallback>
@@ -100,19 +102,27 @@ export function Navbar({ user }: NavbarProps) {
               <DropdownMenuContent align="end" className="w-56">
                 <div className="flex items-center gap-2 p-2">
                   <Avatar className="h-8 w-8">
-                    <AvatarImage src={user.avatarUrl || undefined} alt={user.displayName} />
+                    <AvatarImage
+                      src={user.avatarUrl || undefined}
+                      alt={user.displayName}
+                    />
                     <AvatarFallback>
                       {user.displayName.charAt(0).toUpperCase()}
                     </AvatarFallback>
                   </Avatar>
                   <div className="flex flex-col">
                     <p className="text-sm font-medium">{user.displayName}</p>
-                    <p className="text-xs text-muted-foreground">@{user.username}</p>
+                    <p className="text-xs text-muted-foreground">
+                      @{user.username}
+                    </p>
                   </div>
                 </div>
                 <DropdownMenuSeparator />
                 <DropdownMenuItem asChild>
-                  <Link href={`/profile/${user.id}`} className="flex items-center">
+                  <Link
+                    href={`/profile/${user.id}`}
+                    className="flex items-center"
+                  >
                     <User className="mr-2 h-4 w-4" />
                     Profile
                   </Link>
@@ -124,7 +134,10 @@ export function Navbar({ user }: NavbarProps) {
                   </Link>
                 </DropdownMenuItem>
                 <DropdownMenuSeparator />
-                <DropdownMenuItem onClick={handleLogout} className="text-destructive">
+                <DropdownMenuItem
+                  onClick={handleLogout}
+                  className="text-destructive"
+                >
                   <LogOut className="mr-2 h-4 w-4" />
                   Log out
                 </DropdownMenuItem>
@@ -154,14 +167,19 @@ export function Navbar({ user }: NavbarProps) {
               {user && (
                 <div className="flex items-center gap-3 p-2 border-b pb-4">
                   <Avatar className="h-10 w-10">
-                    <AvatarImage src={user.avatarUrl || undefined} alt={user.displayName} />
+                    <AvatarImage
+                      src={user.avatarUrl || undefined}
+                      alt={user.displayName}
+                    />
                     <AvatarFallback>
                       {user.displayName.charAt(0).toUpperCase()}
                     </AvatarFallback>
                   </Avatar>
                   <div>
                     <p className="font-medium">{user.displayName}</p>
-                    <p className="text-sm text-muted-foreground">@{user.username}</p>
+                    <p className="text-sm text-muted-foreground">
+                      @{user.username}
+                    </p>
                   </div>
                 </div>
               )}
@@ -184,13 +202,19 @@ export function Navbar({ user }: NavbarProps) {
                 <>
                   <div className="border-t pt-4">
                     <Link href={`/profile/${user.id}`}>
-                      <Button variant="ghost" className="w-full justify-start gap-3">
+                      <Button
+                        variant="ghost"
+                        className="w-full justify-start gap-3"
+                      >
                         <User className="h-5 w-5" />
                         Profile
                       </Button>
                     </Link>
                     <Link href="/settings">
-                      <Button variant="ghost" className="w-full justify-start gap-3">
+                      <Button
+                        variant="ghost"
+                        className="w-full justify-start gap-3"
+                      >
                         <Settings className="h-5 w-5" />
                         Settings
                       </Button>

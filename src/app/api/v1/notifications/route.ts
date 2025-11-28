@@ -63,8 +63,8 @@ export async function GET(request: NextRequest) {
       .where(
         and(
           eq(notifications.userId, currentUser.id),
-          eq(notifications.isRead, false)
-        )
+          eq(notifications.isRead, false),
+        ),
       );
 
     return success(
@@ -78,7 +78,7 @@ export async function GET(request: NextRequest) {
           : undefined,
         hasMore,
         total: unreadCount?.count ?? 0,
-      }
+      },
     );
   } catch (err) {
     console.error("Get notifications error:", err);
@@ -92,10 +92,14 @@ export async function PUT(request: NextRequest) {
     const currentUser = await getCurrentUser();
 
     if (!currentUser) {
-      return error("UNAUTHORIZED", "Please log in to manage notifications", 401);
+      return error(
+        "UNAUTHORIZED",
+        "Please log in to manage notifications",
+        401,
+      );
     }
 
-    const body = await request.json() as { ids?: string[]; all?: boolean };
+    const body = (await request.json()) as { ids?: string[]; all?: boolean };
     const db = await getDB();
 
     if (body.all) {
@@ -106,8 +110,8 @@ export async function PUT(request: NextRequest) {
         .where(
           and(
             eq(notifications.userId, currentUser.id),
-            eq(notifications.isRead, false)
-          )
+            eq(notifications.isRead, false),
+          ),
         );
 
       return success({ message: "All notifications marked as read" });
@@ -120,14 +124,21 @@ export async function PUT(request: NextRequest) {
           .update(notifications)
           .set({ isRead: true })
           .where(
-            and(eq(notifications.id, id), eq(notifications.userId, currentUser.id))
+            and(
+              eq(notifications.id, id),
+              eq(notifications.userId, currentUser.id),
+            ),
           );
       }
 
       return success({ message: "Notifications marked as read" });
     }
 
-    return error("INVALID_REQUEST", "Provide notification IDs or set all to true", 400);
+    return error(
+      "INVALID_REQUEST",
+      "Provide notification IDs or set all to true",
+      400,
+    );
   } catch (err) {
     console.error("Mark notifications read error:", err);
     return error("INTERNAL_ERROR", "Failed to mark notifications as read", 500);
@@ -140,7 +151,11 @@ export async function DELETE(request: NextRequest) {
     const currentUser = await getCurrentUser();
 
     if (!currentUser) {
-      return error("UNAUTHORIZED", "Please log in to manage notifications", 401);
+      return error(
+        "UNAUTHORIZED",
+        "Please log in to manage notifications",
+        401,
+      );
     }
 
     const { searchParams } = new URL(request.url);
@@ -163,13 +178,20 @@ export async function DELETE(request: NextRequest) {
       await db
         .delete(notifications)
         .where(
-          and(eq(notifications.id, id), eq(notifications.userId, currentUser.id))
+          and(
+            eq(notifications.id, id),
+            eq(notifications.userId, currentUser.id),
+          ),
         );
 
       return success({ message: "Notification deleted" });
     }
 
-    return error("INVALID_REQUEST", "Provide notification ID or set all to true", 400);
+    return error(
+      "INVALID_REQUEST",
+      "Provide notification ID or set all to true",
+      400,
+    );
   } catch (err) {
     console.error("Delete notifications error:", err);
     return error("INTERNAL_ERROR", "Failed to delete notifications", 500);

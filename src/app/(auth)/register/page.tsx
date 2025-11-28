@@ -49,7 +49,7 @@ export default function RegisterPage() {
         body: JSON.stringify({ email, username, displayName, password }),
       });
 
-      const data = await res.json() as {
+      const data = (await res.json()) as {
         success: boolean;
         error?: {
           message: string;
@@ -84,7 +84,9 @@ export default function RegisterPage() {
   return (
     <Card>
       <CardHeader className="space-y-1">
-        <CardTitle className="text-2xl text-center">Create an account</CardTitle>
+        <CardTitle className="text-2xl text-center">
+          Create an account
+        </CardTitle>
         <CardDescription className="text-center">
           Enter your details to create your account
         </CardDescription>
@@ -106,7 +108,9 @@ export default function RegisterPage() {
               disabled={isLoading}
             />
             {fieldErrors.displayName && (
-              <p className="text-sm text-destructive">{fieldErrors.displayName}</p>
+              <p className="text-sm text-destructive">
+                {fieldErrors.displayName}
+              </p>
             )}
           </div>
           <div className="space-y-2">
@@ -163,7 +167,9 @@ export default function RegisterPage() {
               disabled={isLoading}
             />
             {fieldErrors.confirmPassword && (
-              <p className="text-sm text-destructive">{fieldErrors.confirmPassword}</p>
+              <p className="text-sm text-destructive">
+                {fieldErrors.confirmPassword}
+              </p>
             )}
           </div>
         </CardContent>

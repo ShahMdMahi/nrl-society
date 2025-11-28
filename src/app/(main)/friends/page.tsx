@@ -30,8 +30,8 @@ export default function FriendsPage() {
   const fetchFriends = useCallback(async (status: string) => {
     try {
       const res = await fetch(`/api/v1/friends?status=${status}`);
-      const data = await res.json() as { success: boolean; data?: Friend[] };
-      
+      const data = (await res.json()) as { success: boolean; data?: Friend[] };
+
       if (data.success && data.data) {
         return data.data;
       }
@@ -49,13 +49,13 @@ export default function FriendsPage() {
         fetchFriends("pending"),
         fetchFriends("sent"),
       ]);
-      
+
       setFriends(friendsData);
       setPendingRequests(pendingData);
       setSentRequests(sentData);
       setIsLoading(false);
     };
-    
+
     loadAll();
   }, [fetchFriends]);
 
@@ -64,18 +64,15 @@ export default function FriendsPage() {
       const res = await fetch(`/api/v1/friends/accept/${userId}`, {
         method: "POST",
       });
-      const data = await res.json() as { success: boolean };
-      
+      const data = (await res.json()) as { success: boolean };
+
       if (data.success) {
         const accepted = pendingRequests.find((r) => r.requesterId === userId);
         if (accepted) {
           setPendingRequests((prev) =>
-            prev.filter((r) => r.requesterId !== userId)
+            prev.filter((r) => r.requesterId !== userId),
           );
-          setFriends((prev) => [
-            ...prev,
-            { ...accepted, friendId: userId },
-          ]);
+          setFriends((prev) => [...prev, { ...accepted, friendId: userId }]);
         }
       }
     } catch (error) {
@@ -88,11 +85,11 @@ export default function FriendsPage() {
       const res = await fetch(`/api/v1/friends/reject/${userId}`, {
         method: "POST",
       });
-      const data = await res.json() as { success: boolean };
-      
+      const data = (await res.json()) as { success: boolean };
+
       if (data.success) {
         setPendingRequests((prev) =>
-          prev.filter((r) => r.requesterId !== userId)
+          prev.filter((r) => r.requesterId !== userId),
         );
       }
     } catch (error) {
@@ -105,12 +102,10 @@ export default function FriendsPage() {
       const res = await fetch(`/api/v1/friends/request/${userId}`, {
         method: "DELETE",
       });
-      const data = await res.json() as { success: boolean };
-      
+      const data = (await res.json()) as { success: boolean };
+
       if (data.success) {
-        setSentRequests((prev) =>
-          prev.filter((r) => r.addresseeId !== userId)
-        );
+        setSentRequests((prev) => prev.filter((r) => r.addresseeId !== userId));
       }
     } catch (error) {
       console.error("Failed to cancel request:", error);
@@ -122,8 +117,8 @@ export default function FriendsPage() {
       const res = await fetch(`/api/v1/friends/request/${userId}`, {
         method: "DELETE",
       });
-      const data = await res.json() as { success: boolean };
-      
+      const data = (await res.json()) as { success: boolean };
+
       if (data.success) {
         setFriends((prev) => prev.filter((f) => f.friendId !== userId));
       }
@@ -186,7 +181,9 @@ export default function FriendsPage() {
                 <div className="text-center py-8 text-muted-foreground">
                   <Users className="h-12 w-12 mx-auto mb-4 opacity-50" />
                   <p>No friends yet</p>
-                  <p className="text-sm">Connect with people to add them as friends</p>
+                  <p className="text-sm">
+                    Connect with people to add them as friends
+                  </p>
                 </div>
               ) : (
                 <div className="space-y-2">

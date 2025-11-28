@@ -32,7 +32,7 @@ export function PostComposer({ user, onPostCreated }: PostComposerProps) {
         body: JSON.stringify({ content: content.trim() }),
       });
 
-      const data = await res.json() as { success: boolean };
+      const data = (await res.json()) as { success: boolean };
 
       if (data.success) {
         setContent("");
@@ -53,7 +53,8 @@ export function PostComposer({ user, onPostCreated }: PostComposerProps) {
     // Auto-resize textarea
     if (textareaRef.current) {
       textareaRef.current.style.height = "auto";
-      textareaRef.current.style.height = textareaRef.current.scrollHeight + "px";
+      textareaRef.current.style.height =
+        textareaRef.current.scrollHeight + "px";
     }
   };
 
@@ -62,8 +63,13 @@ export function PostComposer({ user, onPostCreated }: PostComposerProps) {
       <CardContent className="pt-4">
         <div className="flex gap-3">
           <Avatar className="h-10 w-10">
-            <AvatarImage src={user.avatarUrl || undefined} alt={user.displayName} />
-            <AvatarFallback>{user.displayName.charAt(0).toUpperCase()}</AvatarFallback>
+            <AvatarImage
+              src={user.avatarUrl || undefined}
+              alt={user.displayName}
+            />
+            <AvatarFallback>
+              {user.displayName.charAt(0).toUpperCase()}
+            </AvatarFallback>
           </Avatar>
           <div className="flex-1 space-y-3">
             <Textarea
@@ -76,13 +82,28 @@ export function PostComposer({ user, onPostCreated }: PostComposerProps) {
             />
             <div className="flex items-center justify-between border-t pt-3">
               <div className="flex gap-1">
-                <Button variant="ghost" size="icon" className="h-9 w-9" disabled>
+                <Button
+                  variant="ghost"
+                  size="icon"
+                  className="h-9 w-9"
+                  disabled
+                >
                   <ImageIcon className="h-5 w-5 text-muted-foreground" />
                 </Button>
-                <Button variant="ghost" size="icon" className="h-9 w-9" disabled>
+                <Button
+                  variant="ghost"
+                  size="icon"
+                  className="h-9 w-9"
+                  disabled
+                >
                   <Video className="h-5 w-5 text-muted-foreground" />
                 </Button>
-                <Button variant="ghost" size="icon" className="h-9 w-9" disabled>
+                <Button
+                  variant="ghost"
+                  size="icon"
+                  className="h-9 w-9"
+                  disabled
+                >
                   <Smile className="h-5 w-5 text-muted-foreground" />
                 </Button>
               </div>

@@ -31,13 +31,13 @@
 
 ### Cloudflare Free Tier Limits
 
-| Service | Free Tier Limit |
-|---------|----------------|
-| Workers | 100,000 requests/day |
+| Service     | Free Tier Limit               |
+| ----------- | ----------------------------- |
+| Workers     | 100,000 requests/day          |
 | D1 Database | 5GB storage, 5M rows read/day |
-| KV Storage | 1GB storage, 100K reads/day |
-| R2 Storage | 10GB storage, 10M reads/month |
-| Pages | Unlimited requests |
+| KV Storage  | 1GB storage, 100K reads/day   |
+| R2 Storage  | 10GB storage, 10M reads/month |
+| Pages       | Unlimited requests            |
 
 ---
 
@@ -219,15 +219,15 @@ interface AppEnv {
 
 ### 5.3 Environment Variables Reference
 
-| Variable | Type | Purpose |
-|----------|------|---------|
-| `DB` | D1Database | Main SQLite database for all app data |
-| `SESSIONS_KV` | KVNamespace | Store user session tokens |
-| `CACHE_KV` | KVNamespace | General purpose caching |
-| `MEDIA_BUCKET` | R2Bucket | User uploaded media files |
-| `NEXT_TAG_CACHE_D1` | D1Database | Next.js ISR tag cache |
-| `NEXT_INC_CACHE_R2_BUCKET` | R2Bucket | Next.js incremental cache |
-| `NODE_ENV` | string | "production" or "development" |
+| Variable                   | Type        | Purpose                               |
+| -------------------------- | ----------- | ------------------------------------- |
+| `DB`                       | D1Database  | Main SQLite database for all app data |
+| `SESSIONS_KV`              | KVNamespace | Store user session tokens             |
+| `CACHE_KV`                 | KVNamespace | General purpose caching               |
+| `MEDIA_BUCKET`             | R2Bucket    | User uploaded media files             |
+| `NEXT_TAG_CACHE_D1`        | D1Database  | Next.js ISR tag cache                 |
+| `NEXT_INC_CACHE_R2_BUCKET` | R2Bucket    | Next.js incremental cache             |
+| `NODE_ENV`                 | string      | "production" or "development"         |
 
 ---
 
@@ -251,18 +251,18 @@ npx wrangler d1 execute nrl-society-db --remote --command="SELECT name FROM sqli
 
 ### Database Schema
 
-| Table | Purpose |
-|-------|---------|
-| `users` | User accounts and profiles |
-| `sessions` | Authentication sessions |
-| `posts` | User posts/status updates |
-| `comments` | Comments on posts |
-| `likes` | Post likes |
-| `friendships` | Friend relationships |
-| `conversations` | Chat conversations |
-| `conversation_participants` | Users in conversations |
-| `messages` | Chat messages |
-| `notifications` | User notifications |
+| Table                       | Purpose                    |
+| --------------------------- | -------------------------- |
+| `users`                     | User accounts and profiles |
+| `sessions`                  | Authentication sessions    |
+| `posts`                     | User posts/status updates  |
+| `comments`                  | Comments on posts          |
+| `likes`                     | Post likes                 |
+| `friendships`               | Friend relationships       |
+| `conversations`             | Chat conversations         |
+| `conversation_participants` | Users in conversations     |
+| `messages`                  | Chat messages              |
+| `notifications`             | User notifications         |
 
 ---
 
@@ -309,7 +309,7 @@ jobs:
       - name: Setup Node.js
         uses: actions/setup-node@v4
         with:
-          node-version: '20'
+          node-version: "20"
 
       - name: Setup pnpm
         uses: pnpm/action-setup@v2
@@ -477,15 +477,15 @@ npx wrangler d1 execute nrl-society-db --remote --file=./migrations/0001_initial
 
 ### Your Created Resources
 
-| Resource | Name | ID/Details |
-|----------|------|------------|
-| Account | <shahmdmahi24@gmail.com> | `010b79585a07803a496cd9a3bb6cb919` |
-| D1 Database | nrl-society-db | `a40ffbda-e921-4c16-8dc7-580f955dd5eb` |
-| D1 Database | nrl-society-tag-cache | `02e310d3-6b66-40b1-9ffa-c4bca6d80640` |
-| KV Namespace | SESSIONS_KV | `14ddf3302de544fd8f6f1d55b9639a9d` |
-| KV Namespace | CACHE_KV | `679369a958ed4cce83c5cc06102b0e5c` |
-| R2 Bucket | nrl-society-media | For user uploads |
-| R2 Bucket | nrl-society-cache | For Next.js ISR cache |
+| Resource     | Name                     | ID/Details                             |
+| ------------ | ------------------------ | -------------------------------------- |
+| Account      | <shahmdmahi24@gmail.com> | `010b79585a07803a496cd9a3bb6cb919`     |
+| D1 Database  | nrl-society-db           | `a40ffbda-e921-4c16-8dc7-580f955dd5eb` |
+| D1 Database  | nrl-society-tag-cache    | `02e310d3-6b66-40b1-9ffa-c4bca6d80640` |
+| KV Namespace | SESSIONS_KV              | `14ddf3302de544fd8f6f1d55b9639a9d`     |
+| KV Namespace | CACHE_KV                 | `679369a958ed4cce83c5cc06102b0e5c`     |
+| R2 Bucket    | nrl-society-media        | For user uploads                       |
+| R2 Bucket    | nrl-society-cache        | For Next.js ISR cache                  |
 
 ### Bindings Reference
 
@@ -495,14 +495,14 @@ import { getCloudflareContext } from "@opennextjs/cloudflare";
 
 export async function GET() {
   const { env } = await getCloudflareContext();
-  
+
   // Access D1
   const db = env.DB;
-  
+
   // Access KV
   const sessions = env.SESSIONS_KV;
   const cache = env.CACHE_KV;
-  
+
   // Access R2
   const mediaBucket = env.MEDIA_BUCKET;
 }

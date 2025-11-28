@@ -56,10 +56,10 @@ export default async function ProfilePage({ params }: ProfilePageProps) {
       and(
         or(
           eq(friendships.requesterId, userId),
-          eq(friendships.addresseeId, userId)
+          eq(friendships.addresseeId, userId),
         ),
-        eq(friendships.status, "accepted")
-      )
+        eq(friendships.status, "accepted"),
+      ),
     );
 
   // Get user's posts
@@ -118,7 +118,10 @@ export default async function ProfilePage({ params }: ProfilePageProps) {
         <div className="flex flex-col sm:flex-row sm:items-end sm:justify-between">
           <div className="flex flex-col sm:flex-row sm:items-end gap-4">
             <Avatar className="h-32 w-32 -mt-16 border-4 border-background">
-              <AvatarImage src={user.avatarUrl || undefined} alt={user.displayName} />
+              <AvatarImage
+                src={user.avatarUrl || undefined}
+                alt={user.displayName}
+              />
               <AvatarFallback className="text-4xl">
                 {user.displayName.charAt(0).toUpperCase()}
               </AvatarFallback>

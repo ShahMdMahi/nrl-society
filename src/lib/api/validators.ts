@@ -8,7 +8,7 @@ const usernameSchema = z
   .max(30, "Username must be at most 30 characters")
   .regex(
     /^[a-zA-Z0-9_]+$/,
-    "Username can only contain letters, numbers, and underscores"
+    "Username can only contain letters, numbers, and underscores",
   )
   .toLowerCase();
 const passwordSchema = z
@@ -48,7 +48,10 @@ export const createPostSchema = z.object({
     .string()
     .max(5000, "Post content must be at most 5000 characters")
     .optional(),
-  mediaUrls: z.array(z.string().url()).max(10, "Maximum 10 media files").optional(),
+  mediaUrls: z
+    .array(z.string().url())
+    .max(10, "Maximum 10 media files")
+    .optional(),
   visibility: z.enum(["public", "friends", "private"]).default("public"),
 });
 
@@ -122,7 +125,7 @@ export type SearchInput = z.infer<typeof searchSchema>;
  */
 export async function validateBody<T>(
   request: Request,
-  schema: z.ZodSchema<T>
+  schema: z.ZodSchema<T>,
 ): Promise<{ data: T; errors: null } | { data: null; errors: z.ZodIssue[] }> {
   try {
     const body = await request.json();
@@ -141,7 +144,7 @@ export async function validateBody<T>(
  */
 export function validateParams<T>(
   searchParams: URLSearchParams,
-  schema: z.ZodSchema<T>
+  schema: z.ZodSchema<T>,
 ): { data: T; errors: null } | { data: null; errors: z.ZodIssue[] } {
   try {
     const params = Object.fromEntries(searchParams.entries());

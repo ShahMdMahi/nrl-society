@@ -21,7 +21,13 @@ import Link from "next/link";
 
 interface Notification {
   id: string;
-  type: "like" | "comment" | "friend_request" | "friend_accepted" | "message" | "mention";
+  type:
+    | "like"
+    | "comment"
+    | "friend_request"
+    | "friend_accepted"
+    | "message"
+    | "mention";
   content: string | null;
   targetType: string | null;
   targetId: string | null;
@@ -62,12 +68,12 @@ export default function NotificationsPage() {
   const fetchNotifications = useCallback(async () => {
     try {
       const res = await fetch("/api/v1/notifications");
-      const data = await res.json() as {
+      const data = (await res.json()) as {
         success: boolean;
         data?: Notification[];
         meta?: { total?: number };
       };
-      
+
       if (data.success && data.data) {
         setNotifications(data.data);
         setUnreadCount(data.meta?.total ?? 0);
@@ -90,18 +96,14 @@ export default function NotificationsPage() {
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify(ids ? { ids } : { all: true }),
       });
-      
+
       if (ids) {
         setNotifications((prev) =>
-          prev.map((n) =>
-            ids.includes(n.id) ? { ...n, isRead: true } : n
-          )
+          prev.map((n) => (ids.includes(n.id) ? { ...n, isRead: true } : n)),
         );
         setUnreadCount((prev) => Math.max(0, prev - ids.length));
       } else {
-        setNotifications((prev) =>
-          prev.map((n) => ({ ...n, isRead: true }))
-        );
+        setNotifications((prev) => prev.map((n) => ({ ...n, isRead: true })));
         setUnreadCount(0);
       }
     } catch (error) {
@@ -182,7 +184,9 @@ export default function NotificationsPage() {
                         alt={notification.actor?.displayName || "User"}
                       />
                       <AvatarFallback>
-                        {notification.actor?.displayName?.charAt(0).toUpperCase() || "?"}
+                        {notification.actor?.displayName
+                          ?.charAt(0)
+                          .toUpperCase() || "?"}
                       </AvatarFallback>
                     </Avatar>
                     <div className="absolute -bottom-1 -right-1 bg-background rounded-full p-0.5">

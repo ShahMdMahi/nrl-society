@@ -27,7 +27,7 @@ export function Sidebar() {
                 variant={pathname === item.href ? "secondary" : "ghost"}
                 className={cn(
                   "w-full justify-start gap-3",
-                  pathname === item.href && "bg-secondary"
+                  pathname === item.href && "bg-secondary",
                 )}
               >
                 <item.icon className="h-5 w-5" />

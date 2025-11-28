@@ -15,7 +15,11 @@ export async function POST(_request: NextRequest, context: RouteContext) {
     const currentUser = await getCurrentUser();
 
     if (!currentUser) {
-      return error("UNAUTHORIZED", "Please log in to reject friend requests", 401);
+      return error(
+        "UNAUTHORIZED",
+        "Please log in to reject friend requests",
+        401,
+      );
     }
 
     const { userId } = await context.params;
@@ -30,8 +34,8 @@ export async function POST(_request: NextRequest, context: RouteContext) {
         and(
           eq(friendships.requesterId, userId),
           eq(friendships.addresseeId, currentUser.id),
-          eq(friendships.status, "pending")
-        )
+          eq(friendships.status, "pending"),
+        ),
       )
       .limit(1);
 

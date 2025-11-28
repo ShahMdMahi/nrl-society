@@ -1,10 +1,6 @@
 import { NextRequest } from "next/server";
 import { getDB } from "@/lib/cloudflare/d1";
-import {
-  conversationParticipants,
-  messages,
-  users,
-} from "@/lib/db/schema";
+import { conversationParticipants, messages, users } from "@/lib/db/schema";
 import { getCurrentUser } from "@/lib/auth/session";
 import { success, error } from "@/lib/api/response";
 import { eq, desc, and, sql } from "drizzle-orm";
@@ -36,13 +32,17 @@ export async function GET(request: NextRequest, context: RouteContext) {
       .where(
         and(
           eq(conversationParticipants.conversationId, conversationId),
-          eq(conversationParticipants.userId, currentUser.id)
-        )
+          eq(conversationParticipants.userId, currentUser.id),
+        ),
       )
       .limit(1);
 
     if (!participant) {
-      return error("FORBIDDEN", "You are not a participant of this conversation", 403);
+      return error(
+        "FORBIDDEN",
+        "You are not a participant of this conversation",
+        403,
+      );
     }
 
     // Build conditions
@@ -85,11 +85,9 @@ export async function GET(request: NextRequest, context: RouteContext) {
         isOwn: m.sender.id === currentUser.id,
       })),
       {
-        cursor: hasMore
-          ? items[0].createdAt.toISOString()
-          : undefined,
+        cursor: hasMore ? items[0].createdAt.toISOString() : undefined,
         hasMore,
-      }
+      },
     );
   } catch (err) {
     console.error("Get messages error:", err);
@@ -107,13 +105,17 @@ export async function POST(request: NextRequest, context: RouteContext) {
     }
 
     const { conversationId } = await context.params;
-    const body = await request.json() as {
+    const body = (await request.json()) as {
       content: string;
       mediaUrl?: string;
     };
 
     if (!body.content?.trim() && !body.mediaUrl) {
-      return error("INVALID_REQUEST", "Message content or media is required", 400);
+      return error(
+        "INVALID_REQUEST",
+        "Message content or media is required",
+        400,
+      );
     }
 
     const db = await getDB();
@@ -125,13 +127,17 @@ export async function POST(request: NextRequest, context: RouteContext) {
       .where(
         and(
           eq(conversationParticipants.conversationId, conversationId),
-          eq(conversationParticipants.userId, currentUser.id)
-        )
+          eq(conversationParticipants.userId, currentUser.id),
+        ),
       )
       .limit(1);
 
     if (!participant) {
-      return error("FORBIDDEN", "You are not a participant of this conversation", 403);
+      return error(
+        "FORBIDDEN",
+        "You are not a participant of this conversation",
+        403,
+      );
     }
 
     // Create message

@@ -6,7 +6,12 @@ import Image from "next/image";
 import { formatDistanceToNow } from "date-fns";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Button } from "@/components/ui/button";
-import { Card, CardContent, CardFooter, CardHeader } from "@/components/ui/card";
+import {
+  Card,
+  CardContent,
+  CardFooter,
+  CardHeader,
+} from "@/components/ui/card";
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -70,7 +75,7 @@ export function PostCard({ post, onDelete }: PostCardProps) {
         method: wasLiked ? "DELETE" : "POST",
       });
 
-      const data = await res.json() as { success: boolean };
+      const data = (await res.json()) as { success: boolean };
 
       if (!data.success) {
         // Revert on error
@@ -94,7 +99,7 @@ export function PostCard({ post, onDelete }: PostCardProps) {
         method: "DELETE",
       });
 
-      const data = await res.json() as { success: boolean };
+      const data = (await res.json()) as { success: boolean };
 
       if (data.success) {
         onDelete?.(post.id);
@@ -200,15 +205,15 @@ export function PostCard({ post, onDelete }: PostCardProps) {
             onClick={handleLike}
             disabled={isLiking}
           >
-            <Heart
-              className={cn("h-4 w-4", isLiked && "fill-current")}
-            />
+            <Heart className={cn("h-4 w-4", isLiked && "fill-current")} />
             <span>{likesCount > 0 ? likesCount : ""}</span>
           </Button>
           <Link href={`/post/${post.id}`}>
             <Button variant="ghost" size="sm" className="gap-2">
               <MessageCircle className="h-4 w-4" />
-              <span>{(post.commentsCount ?? 0) > 0 ? post.commentsCount : ""}</span>
+              <span>
+                {(post.commentsCount ?? 0) > 0 ? post.commentsCount : ""}
+              </span>
             </Button>
           </Link>
           <Button variant="ghost" size="sm" className="gap-2" disabled>

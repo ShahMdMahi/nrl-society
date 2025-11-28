@@ -22,10 +22,14 @@ export interface ApiErrorResponse {
 export type ApiResponse<T = unknown> = ApiSuccessResponse<T> | ApiErrorResponse;
 
 // Type guard for API responses
-export function isApiSuccess<T>(response: ApiResponse<T>): response is ApiSuccessResponse<T> {
+export function isApiSuccess<T>(
+  response: ApiResponse<T>,
+): response is ApiSuccessResponse<T> {
   return response.success === true;
 }
 
-export function isApiError(response: ApiResponse): response is ApiErrorResponse {
+export function isApiError(
+  response: ApiResponse,
+): response is ApiErrorResponse {
   return response.success === false;
 }

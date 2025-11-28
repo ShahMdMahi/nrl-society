@@ -48,7 +48,8 @@ interface Message {
 
 export default function MessagesPage() {
   const [conversations, setConversations] = useState<Conversation[]>([]);
-  const [selectedConversation, setSelectedConversation] = useState<Conversation | null>(null);
+  const [selectedConversation, setSelectedConversation] =
+    useState<Conversation | null>(null);
   const [messages, setMessages] = useState<Message[]>([]);
   const [isLoadingConversations, setIsLoadingConversations] = useState(true);
   const [isLoadingMessages, setIsLoadingMessages] = useState(false);
@@ -59,8 +60,11 @@ export default function MessagesPage() {
   const fetchConversations = useCallback(async () => {
     try {
       const res = await fetch("/api/v1/conversations");
-      const data = await res.json() as { success: boolean; data?: Conversation[] };
-      
+      const data = (await res.json()) as {
+        success: boolean;
+        data?: Conversation[];
+      };
+
       if (data.success && data.data) {
         setConversations(data.data);
       }
@@ -74,9 +78,11 @@ export default function MessagesPage() {
   const fetchMessages = useCallback(async (conversationId: string) => {
     setIsLoadingMessages(true);
     try {
-      const res = await fetch(`/api/v1/conversations/${conversationId}/messages`);
-      const data = await res.json() as { success: boolean; data?: Message[] };
-      
+      const res = await fetch(
+        `/api/v1/conversations/${conversationId}/messages`,
+      );
+      const data = (await res.json()) as { success: boolean; data?: Message[] };
+
       if (data.success && data.data) {
         setMessages(data.data);
       }
@@ -112,10 +118,13 @@ export default function MessagesPage() {
           method: "POST",
           headers: { "Content-Type": "application/json" },
           body: JSON.stringify({ content: newMessage }),
-        }
+        },
       );
-      const data = await res.json() as { success: boolean; data?: Message } & Message;
-      
+      const data = (await res.json()) as {
+        success: boolean;
+        data?: Message;
+      } & Message;
+
       if (data.success) {
         const msg = data.data || data;
         setMessages((prev) => [...prev, msg as Message]);
@@ -172,7 +181,7 @@ export default function MessagesPage() {
       <Card
         className={cn(
           "w-80 shrink-0 flex flex-col",
-          selectedConversation && "hidden md:flex"
+          selectedConversation && "hidden md:flex",
         )}
       >
         <CardHeader className="shrink-0">
@@ -205,7 +214,7 @@ export default function MessagesPage() {
                       "w-full flex items-center gap-3 p-3 rounded-lg text-left transition-colors",
                       selectedConversation?.id === conv.id
                         ? "bg-primary/10"
-                        : "hover:bg-muted/50"
+                        : "hover:bg-muted/50",
                     )}
                   >
                     <Avatar className="h-12 w-12">
@@ -229,9 +238,12 @@ export default function MessagesPage() {
                     </div>
                     {conv.lastMessage && (
                       <span className="text-xs text-muted-foreground">
-                        {formatDistanceToNow(new Date(conv.lastMessage.createdAt), {
-                          addSuffix: false,
-                        })}
+                        {formatDistanceToNow(
+                          new Date(conv.lastMessage.createdAt),
+                          {
+                            addSuffix: false,
+                          },
+                        )}
                       </span>
                     )}
                   </button>
@@ -246,7 +258,7 @@ export default function MessagesPage() {
       <Card
         className={cn(
           "flex-1 flex flex-col",
-          !selectedConversation && "hidden md:flex"
+          !selectedConversation && "hidden md:flex",
         )}
       >
         {selectedConversation ? (
@@ -263,11 +275,15 @@ export default function MessagesPage() {
                 </Button>
                 <Avatar className="h-10 w-10">
                   <AvatarImage
-                    src={getConversationAvatar(selectedConversation) || undefined}
+                    src={
+                      getConversationAvatar(selectedConversation) || undefined
+                    }
                     alt={getConversationName(selectedConversation)}
                   />
                   <AvatarFallback>
-                    {getConversationName(selectedConversation).charAt(0).toUpperCase()}
+                    {getConversationName(selectedConversation)
+                      .charAt(0)
+                      .toUpperCase()}
                   </AvatarFallback>
                 </Avatar>
                 <div>
@@ -291,7 +307,7 @@ export default function MessagesPage() {
                         key={i}
                         className={cn(
                           "flex gap-2",
-                          i % 2 === 0 ? "justify-end" : "justify-start"
+                          i % 2 === 0 ? "justify-end" : "justify-start",
                         )}
                       >
                         <Skeleton className="h-8 w-48 rounded-lg" />
@@ -301,7 +317,9 @@ export default function MessagesPage() {
                 ) : messages.length === 0 ? (
                   <div className="text-center py-8 text-muted-foreground">
                     <p>No messages yet</p>
-                    <p className="text-sm">Send a message to start the conversation</p>
+                    <p className="text-sm">
+                      Send a message to start the conversation
+                    </p>
                   </div>
                 ) : (
                   <div className="space-y-4">
@@ -310,7 +328,7 @@ export default function MessagesPage() {
                         key={message.id}
                         className={cn(
                           "flex gap-2",
-                          message.isOwn ? "justify-end" : "justify-start"
+                          message.isOwn ? "justify-end" : "justify-start",
                         )}
                       >
                         {!message.isOwn && (
@@ -320,7 +338,9 @@ export default function MessagesPage() {
                               alt={message.sender.displayName}
                             />
                             <AvatarFallback>
-                              {message.sender.displayName.charAt(0).toUpperCase()}
+                              {message.sender.displayName
+                                .charAt(0)
+                                .toUpperCase()}
                             </AvatarFallback>
                           </Avatar>
                         )}
@@ -329,7 +349,7 @@ export default function MessagesPage() {
                             "max-w-[70%] rounded-lg px-3 py-2",
                             message.isOwn
                               ? "bg-primary text-primary-foreground"
-                              : "bg-muted"
+                              : "bg-muted",
                           )}
                         >
                           <p className="text-sm">{message.content}</p>
@@ -338,7 +358,7 @@ export default function MessagesPage() {
                               "text-xs mt-1",
                               message.isOwn
                                 ? "text-primary-foreground/70"
-                                : "text-muted-foreground"
+                                : "text-muted-foreground",
                             )}
                           >
                             {formatDistanceToNow(new Date(message.createdAt), {
@@ -367,7 +387,10 @@ export default function MessagesPage() {
                   onChange={(e) => setNewMessage(e.target.value)}
                   disabled={isSending}
                 />
-                <Button type="submit" disabled={!newMessage.trim() || isSending}>
+                <Button
+                  type="submit"
+                  disabled={!newMessage.trim() || isSending}
+                >
                   <Send className="h-4 w-4" />
                 </Button>
               </form>

@@ -22,46 +22,49 @@ export function FeedClient({ user }: FeedClientProps) {
   const [hasMore, setHasMore] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
-  const fetchPosts = useCallback(async (loadMore = false) => {
-    if (loadMore) {
-      setIsLoadingMore(true);
-    } else {
-      setIsLoading(true);
-    }
-    setError(null);
-
-    try {
-      const params = new URLSearchParams({ limit: "10" });
-      if (loadMore && cursor) {
-        params.set("cursor", cursor);
-      }
-
-      const res = await fetch(`/api/v1/posts?${params}`);
-      const data = await res.json() as {
-        success: boolean;
-        data?: PostData[];
-        meta?: { cursor?: string; hasMore?: boolean };
-        error?: { message: string };
-      };
-
-      if (data.success && data.data) {
-        if (loadMore) {
-          setPosts((prev) => [...prev, ...data.data!]);
-        } else {
-          setPosts(data.data);
-        }
-        setCursor(data.meta?.cursor);
-        setHasMore(data.meta?.hasMore ?? false);
+  const fetchPosts = useCallback(
+    async (loadMore = false) => {
+      if (loadMore) {
+        setIsLoadingMore(true);
       } else {
-        setError(data.error?.message || "Failed to load posts");
+        setIsLoading(true);
       }
-    } catch {
-      setError("Failed to load posts");
-    } finally {
-      setIsLoading(false);
-      setIsLoadingMore(false);
-    }
-  }, [cursor]);
+      setError(null);
+
+      try {
+        const params = new URLSearchParams({ limit: "10" });
+        if (loadMore && cursor) {
+          params.set("cursor", cursor);
+        }
+
+        const res = await fetch(`/api/v1/posts?${params}`);
+        const data = (await res.json()) as {
+          success: boolean;
+          data?: PostData[];
+          meta?: { cursor?: string; hasMore?: boolean };
+          error?: { message: string };
+        };
+
+        if (data.success && data.data) {
+          if (loadMore) {
+            setPosts((prev) => [...prev, ...data.data!]);
+          } else {
+            setPosts(data.data);
+          }
+          setCursor(data.meta?.cursor);
+          setHasMore(data.meta?.hasMore ?? false);
+        } else {
+          setError(data.error?.message || "Failed to load posts");
+        }
+      } catch {
+        setError("Failed to load posts");
+      } finally {
+        setIsLoading(false);
+        setIsLoadingMore(false);
+      }
+    },
+    [cursor],
+  );
 
   useEffect(() => {
     fetchPosts();
@@ -134,11 +137,7 @@ export function FeedClient({ user }: FeedClientProps) {
       ) : (
         <>
           {posts.map((post) => (
-            <PostCard
-              key={post.id}
-              post={post}
-              onDelete={handleDeletePost}
-            />
+            <PostCard key={post.id} post={post} onDelete={handleDeletePost} />
           ))}
 
           {hasMore && (

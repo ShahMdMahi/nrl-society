@@ -32,7 +32,7 @@ export async function createSession(userId: string): Promise<string> {
   await kvSet(
     `session:${sessionId}`,
     { userId, expiresAt },
-    { expirationTtl: SESSION_DURATION }
+    { expirationTtl: SESSION_DURATION },
   );
 
   // Also store in D1 for persistence
@@ -86,9 +86,7 @@ export async function getSession(): Promise<SessionData | null> {
   const [dbSession] = await db
     .select()
     .from(sessions)
-    .where(
-      and(eq(sessions.id, sessionId), gt(sessions.expiresAt, new Date()))
-    )
+    .where(and(eq(sessions.id, sessionId), gt(sessions.expiresAt, new Date())))
     .limit(1);
 
   if (!dbSession) {
@@ -207,7 +205,7 @@ export async function refreshSession(): Promise<void> {
   await kvSet(
     `session:${sessionId}`,
     { ...session, expiresAt: newExpiresAt },
-    { expirationTtl: SESSION_DURATION }
+    { expirationTtl: SESSION_DURATION },
   );
 
   // Update D1
@@ -231,7 +229,7 @@ export async function refreshSession(): Promise<void> {
  * Get session ID from Authorization header (for API/mobile)
  */
 export function getSessionIdFromHeader(
-  authHeader: string | null
+  authHeader: string | null,
 ): string | null {
   if (!authHeader?.startsWith("Bearer ")) {
     return null;
@@ -243,7 +241,7 @@ export function getSessionIdFromHeader(
  * Validate session from Authorization header (for API routes)
  */
 export async function validateApiSession(
-  authHeader: string | null
+  authHeader: string | null,
 ): Promise<SessionData | null> {
   const sessionId = getSessionIdFromHeader(authHeader);
 
@@ -265,9 +263,7 @@ export async function validateApiSession(
   const [dbSession] = await db
     .select()
     .from(sessions)
-    .where(
-      and(eq(sessions.id, sessionId), gt(sessions.expiresAt, new Date()))
-    )
+    .where(and(eq(sessions.id, sessionId), gt(sessions.expiresAt, new Date())))
     .limit(1);
 
   if (!dbSession) {

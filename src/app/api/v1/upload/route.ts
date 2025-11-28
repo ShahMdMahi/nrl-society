@@ -4,7 +4,12 @@ import { getCurrentUser } from "@/lib/auth/session";
 import { success, error } from "@/lib/api/response";
 
 // Allowed file types and size limits
-const ALLOWED_IMAGE_TYPES = ["image/jpeg", "image/png", "image/gif", "image/webp"];
+const ALLOWED_IMAGE_TYPES = [
+  "image/jpeg",
+  "image/png",
+  "image/gif",
+  "image/webp",
+];
 const ALLOWED_VIDEO_TYPES = ["video/mp4", "video/webm"];
 const MAX_IMAGE_SIZE = 5 * 1024 * 1024; // 5MB
 const MAX_VIDEO_SIZE = 50 * 1024 * 1024; // 50MB
@@ -39,7 +44,7 @@ export async function POST(request: NextRequest) {
       return error(
         "INVALID_FILE_TYPE",
         "File type not allowed. Allowed: JPEG, PNG, GIF, WebP images and MP4, WebM videos",
-        400
+        400,
       );
     }
 
@@ -50,7 +55,7 @@ export async function POST(request: NextRequest) {
       return error(
         "FILE_TOO_LARGE",
         `File size exceeds ${maxSizeMB}MB limit`,
-        400
+        400,
       );
     }
 
@@ -58,7 +63,12 @@ export async function POST(request: NextRequest) {
     const timestamp = Date.now();
     const randomId = crypto.randomUUID().slice(0, 8);
     const extension = file.name.split(".").pop() || (isImage ? "jpg" : "mp4");
-    const folder = type === "avatar" || type === "cover" ? "profiles" : type === "message" ? "messages" : "posts";
+    const folder =
+      type === "avatar" || type === "cover"
+        ? "profiles"
+        : type === "message"
+          ? "messages"
+          : "posts";
     const key = `${folder}/${currentUser.id}/${timestamp}-${randomId}.${extension}`;
 
     // Upload to R2

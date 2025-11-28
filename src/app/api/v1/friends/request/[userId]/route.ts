@@ -15,13 +15,21 @@ export async function POST(_request: NextRequest, context: RouteContext) {
     const currentUser = await getCurrentUser();
 
     if (!currentUser) {
-      return error("UNAUTHORIZED", "Please log in to send friend requests", 401);
+      return error(
+        "UNAUTHORIZED",
+        "Please log in to send friend requests",
+        401,
+      );
     }
 
     const { userId } = await context.params;
 
     if (userId === currentUser.id) {
-      return error("INVALID_REQUEST", "Cannot send friend request to yourself", 400);
+      return error(
+        "INVALID_REQUEST",
+        "Cannot send friend request to yourself",
+        400,
+      );
     }
 
     const db = await getDB();
@@ -45,20 +53,24 @@ export async function POST(_request: NextRequest, context: RouteContext) {
         or(
           and(
             eq(friendships.requesterId, currentUser.id),
-            eq(friendships.addresseeId, userId)
+            eq(friendships.addresseeId, userId),
           ),
           and(
             eq(friendships.requesterId, userId),
-            eq(friendships.addresseeId, currentUser.id)
-          )
-        )
+            eq(friendships.addresseeId, currentUser.id),
+          ),
+        ),
       )
       .limit(1);
 
     if (existingFriendship.length > 0) {
       const friendship = existingFriendship[0];
       if (friendship.status === "accepted") {
-        return error("ALREADY_FRIENDS", "You are already friends with this user", 400);
+        return error(
+          "ALREADY_FRIENDS",
+          "You are already friends with this user",
+          400,
+        );
       }
       if (friendship.status === "pending") {
         if (friendship.requesterId === currentUser.id) {
@@ -126,13 +138,13 @@ export async function DELETE(_request: NextRequest, context: RouteContext) {
         or(
           and(
             eq(friendships.requesterId, currentUser.id),
-            eq(friendships.addresseeId, userId)
+            eq(friendships.addresseeId, userId),
           ),
           and(
             eq(friendships.requesterId, userId),
-            eq(friendships.addresseeId, currentUser.id)
-          )
-        )
+            eq(friendships.addresseeId, currentUser.id),
+          ),
+        ),
       )
       .limit(1);
 

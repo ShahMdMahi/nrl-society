@@ -43,7 +43,11 @@ export async function POST(request: NextRequest, { params }: RouteParams) {
 
     // Check if post exists
     const [post] = await db
-      .select({ id: posts.id, userId: posts.userId, likesCount: posts.likesCount })
+      .select({
+        id: posts.id,
+        userId: posts.userId,
+        likesCount: posts.likesCount,
+      })
       .from(posts)
       .where(eq(posts.id, postId))
       .limit(1);
@@ -60,13 +64,17 @@ export async function POST(request: NextRequest, { params }: RouteParams) {
         and(
           eq(likes.userId, userId),
           eq(likes.targetType, "post"),
-          eq(likes.targetId, postId)
-        )
+          eq(likes.targetId, postId),
+        ),
       )
       .limit(1);
 
     if (existingLike) {
-      return error(ErrorCodes.ALREADY_EXISTS, "You have already liked this post", 409);
+      return error(
+        ErrorCodes.ALREADY_EXISTS,
+        "You have already liked this post",
+        409,
+      );
     }
 
     // Create like
@@ -147,8 +155,8 @@ export async function DELETE(request: NextRequest, { params }: RouteParams) {
         and(
           eq(likes.userId, userId),
           eq(likes.targetType, "post"),
-          eq(likes.targetId, postId)
-        )
+          eq(likes.targetId, postId),
+        ),
       )
       .limit(1);
 
@@ -163,8 +171,8 @@ export async function DELETE(request: NextRequest, { params }: RouteParams) {
         and(
           eq(likes.userId, userId),
           eq(likes.targetType, "post"),
-          eq(likes.targetId, postId)
-        )
+          eq(likes.targetId, postId),
+        ),
       );
 
     // Decrement likes count
