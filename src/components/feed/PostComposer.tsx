@@ -1,11 +1,12 @@
 "use client";
 
 import { useState, useRef } from "react";
+import Image from "next/image";
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Card, CardContent } from "@/components/ui/card";
-import { ImageIcon, Video, Smile, Loader2 } from "lucide-react";
+import { ImageIcon, Video, Smile, Loader2, X } from "lucide-react";
 
 interface PostComposerProps {
   user: {
@@ -17,25 +18,63 @@ interface PostComposerProps {
 
 export function PostComposer({ user, onPostCreated }: PostComposerProps) {
   const [content, setContent] = useState("");
+  const [mediaFiles, setMediaFiles] = useState<File[]>([]);
+  const [mediaPreviewUrls, setMediaPreviewUrls] = useState<string[]>([]);
   const [isLoading, setIsLoading] = useState(false);
+  const [isUploading, setIsUploading] = useState(false);
   const textareaRef = useRef<HTMLTextAreaElement>(null);
+  const imageInputRef = useRef<HTMLInputElement>(null);
+  const videoInputRef = useRef<HTMLInputElement>(null);
 
   const handleSubmit = async () => {
-    if (!content.trim() || isLoading) return;
+    if ((!content.trim() && mediaFiles.length === 0) || isLoading) return;
 
     setIsLoading(true);
 
     try {
+      // Upload media files first if any
+      const uploadedUrls: string[] = [];
+
+      if (mediaFiles.length > 0) {
+        setIsUploading(true);
+        for (const file of mediaFiles) {
+          const formData = new FormData();
+          formData.append("file", file);
+          formData.append("type", "post");
+
+          const uploadRes = await fetch("/api/v1/upload", {
+            method: "POST",
+            body: formData,
+          });
+
+          const uploadData = (await uploadRes.json()) as {
+            success: boolean;
+            data?: { url: string };
+          };
+
+          if (uploadData.success && uploadData.data?.url) {
+            uploadedUrls.push(uploadData.data.url);
+          }
+        }
+        setIsUploading(false);
+      }
+
+      // Create post
       const res = await fetch("/api/v1/posts", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ content: content.trim() }),
+        body: JSON.stringify({
+          content: content.trim() || undefined,
+          mediaUrls: uploadedUrls.length > 0 ? uploadedUrls : undefined,
+        }),
       });
 
       const data = (await res.json()) as { success: boolean };
 
       if (data.success) {
         setContent("");
+        setMediaFiles([]);
+        setMediaPreviewUrls([]);
         if (textareaRef.current) {
           textareaRef.current.style.height = "auto";
         }
@@ -45,6 +84,7 @@ export function PostComposer({ user, onPostCreated }: PostComposerProps) {
       console.error("Failed to create post:", error);
     } finally {
       setIsLoading(false);
+      setIsUploading(false);
     }
   };
 
@@ -56,6 +96,35 @@ export function PostComposer({ user, onPostCreated }: PostComposerProps) {
       textareaRef.current.style.height =
         textareaRef.current.scrollHeight + "px";
     }
+  };
+
+  const handleMediaSelect = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const files = Array.from(e.target.files || []);
+    if (files.length === 0) return;
+
+    // Limit to 10 files total
+    const remainingSlots = 10 - mediaFiles.length;
+    const filesToAdd = files.slice(0, remainingSlots);
+
+    if (filesToAdd.length === 0) {
+      alert("Maximum 10 media files allowed per post");
+      return;
+    }
+
+    setMediaFiles((prev) => [...prev, ...filesToAdd]);
+
+    // Create preview URLs
+    const newPreviewUrls = filesToAdd.map((file) => URL.createObjectURL(file));
+    setMediaPreviewUrls((prev) => [...prev, ...newPreviewUrls]);
+
+    // Reset input
+    e.target.value = "";
+  };
+
+  const removeMedia = (index: number) => {
+    URL.revokeObjectURL(mediaPreviewUrls[index]);
+    setMediaFiles((prev) => prev.filter((_, i) => i !== index));
+    setMediaPreviewUrls((prev) => prev.filter((_, i) => i !== index));
   };
 
   return (
@@ -80,21 +149,74 @@ export function PostComposer({ user, onPostCreated }: PostComposerProps) {
               className="min-h-20 resize-none border-0 p-0 text-base focus-visible:ring-0"
               disabled={isLoading}
             />
+
+            {/* Media Previews */}
+            {mediaPreviewUrls.length > 0 && (
+              <div className="grid grid-cols-2 gap-2 sm:grid-cols-3">
+                {mediaPreviewUrls.map((url, index) => (
+                  <div key={index} className="relative aspect-square">
+                    {mediaFiles[index]?.type.startsWith("video/") ? (
+                      <video
+                        src={url}
+                        className="h-full w-full rounded-lg object-cover"
+                      />
+                    ) : (
+                      <Image
+                        src={url}
+                        alt={`Media ${index + 1}`}
+                        fill
+                        className="rounded-lg object-cover"
+                        unoptimized
+                      />
+                    )}
+                    <Button
+                      variant="destructive"
+                      size="icon"
+                      className="absolute top-1 right-1 h-6 w-6"
+                      onClick={() => removeMedia(index)}
+                      disabled={isLoading}
+                    >
+                      <X className="h-3 w-3" />
+                    </Button>
+                  </div>
+                ))}
+              </div>
+            )}
+
             <div className="flex items-center justify-between border-t pt-3">
               <div className="flex gap-1">
+                <input
+                  ref={imageInputRef}
+                  type="file"
+                  accept="image/jpeg,image/png,image/gif,image/webp"
+                  multiple
+                  className="hidden"
+                  onChange={handleMediaSelect}
+                  disabled={isLoading || mediaFiles.length >= 10}
+                />
                 <Button
                   variant="ghost"
                   size="icon"
                   className="h-9 w-9"
-                  disabled
+                  onClick={() => imageInputRef.current?.click()}
+                  disabled={isLoading || mediaFiles.length >= 10}
                 >
                   <ImageIcon className="text-muted-foreground h-5 w-5" />
                 </Button>
+                <input
+                  ref={videoInputRef}
+                  type="file"
+                  accept="video/mp4,video/webm"
+                  className="hidden"
+                  onChange={handleMediaSelect}
+                  disabled={isLoading || mediaFiles.length >= 10}
+                />
                 <Button
                   variant="ghost"
                   size="icon"
                   className="h-9 w-9"
-                  disabled
+                  onClick={() => videoInputRef.current?.click()}
+                  disabled={isLoading || mediaFiles.length >= 10}
                 >
                   <Video className="text-muted-foreground h-5 w-5" />
                 </Button>
@@ -107,14 +229,25 @@ export function PostComposer({ user, onPostCreated }: PostComposerProps) {
                   <Smile className="text-muted-foreground h-5 w-5" />
                 </Button>
               </div>
-              <Button
-                onClick={handleSubmit}
-                disabled={!content.trim() || isLoading}
-                size="sm"
-              >
-                {isLoading && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
-                Post
-              </Button>
+              <div className="flex items-center gap-2">
+                {mediaFiles.length > 0 && (
+                  <span className="text-muted-foreground text-xs">
+                    {mediaFiles.length}/10 files
+                  </span>
+                )}
+                <Button
+                  onClick={handleSubmit}
+                  disabled={
+                    (!content.trim() && mediaFiles.length === 0) || isLoading
+                  }
+                  size="sm"
+                >
+                  {isLoading && (
+                    <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                  )}
+                  {isUploading ? "Uploading..." : "Post"}
+                </Button>
+              </div>
             </div>
           </div>
         </div>

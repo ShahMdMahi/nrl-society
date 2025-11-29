@@ -214,5 +214,63 @@ async function handleCreateComment(
   }
 }
 
+// DELETE /api/v1/posts/[postId]/comments?commentId=xxx - Delete a comment
+async function handleDeleteComment(
+  request: NextRequest,
+  { user, requestId }: ApiContext,
+  params?: CommentParams
+) {
+  try {
+    const postId = params?.postId;
+    if (!postId) {
+      return notFound("Post");
+    }
+
+    const { searchParams } = new URL(request.url);
+    const commentId = searchParams.get("commentId");
+    if (!commentId) {
+      return notFound("Comment ID required");
+    }
+
+    const db = await getDB();
+
+    // Check if comment exists and belongs to user
+    const [comment] = await db
+      .select({
+        id: comments.id,
+        userId: comments.userId,
+        postId: comments.postId,
+      })
+      .from(comments)
+      .where(and(eq(comments.id, commentId), eq(comments.postId, postId)))
+      .limit(1);
+
+    if (!comment) {
+      return notFound("Comment");
+    }
+
+    if (comment.userId !== user.id) {
+      return notFound("Comment"); // Return 404 instead of 403 for security
+    }
+
+    // Delete comment
+    await db.delete(comments).where(eq(comments.id, commentId));
+
+    // Decrement comments count on post
+    await db
+      .update(posts)
+      .set({
+        commentsCount: sql`CASE WHEN ${posts.commentsCount} > 0 THEN ${posts.commentsCount} - 1 ELSE 0 END`,
+      })
+      .where(eq(posts.id, postId));
+
+    return success({ deleted: true });
+  } catch (err) {
+    logError(requestId, "delete_comment_error", err);
+    return serverError("Failed to delete comment");
+  }
+}
+
 export const GET = withOptionalAuth<CommentParams>(handleGetComments);
 export const POST = withAuth<CommentParams>(handleCreateComment);
+export const DELETE = withAuth<CommentParams>(handleDeleteComment);

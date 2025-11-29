@@ -1,15 +1,25 @@
 import { notFound } from "next/navigation";
 import Image from "next/image";
+import Link from "next/link";
 import { getDB } from "@/lib/cloudflare/d1";
-import { users, posts, friendships } from "@/lib/db/schema";
+import { users, posts, friendships, likes, blocks } from "@/lib/db/schema";
 import { getCurrentUser } from "@/lib/auth/session";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Button } from "@/components/ui/button";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { BadgeCheck, Calendar } from "lucide-react";
-import { eq, sql, or, and, desc } from "drizzle-orm";
+import {
+  BadgeCheck,
+  Calendar,
+  Settings,
+  UserPlus,
+  UserMinus,
+  Clock,
+  ShieldBan,
+} from "lucide-react";
+import { eq, sql, or, and, desc, inArray } from "drizzle-orm";
 import { format } from "date-fns";
 import { PostCard, type PostData } from "@/components/feed/PostCard";
+import ProfileActions from "./ProfileActions";
 
 interface ProfilePageProps {
   params: Promise<{ userId: string }>;
@@ -81,6 +91,75 @@ export default async function ProfilePage({ params }: ProfilePageProps) {
 
   const isOwnProfile = currentUser?.id === userId;
 
+  // Get friendship status if not own profile
+  let friendshipStatus:
+    | "none"
+    | "pending_sent"
+    | "pending_received"
+    | "friends" = "none";
+  if (currentUser && !isOwnProfile) {
+    const [friendship] = await db
+      .select({
+        status: friendships.status,
+        requesterId: friendships.requesterId,
+      })
+      .from(friendships)
+      .where(
+        or(
+          and(
+            eq(friendships.requesterId, currentUser.id),
+            eq(friendships.addresseeId, userId)
+          ),
+          and(
+            eq(friendships.requesterId, userId),
+            eq(friendships.addresseeId, currentUser.id)
+          )
+        )
+      )
+      .limit(1);
+
+    if (friendship) {
+      if (friendship.status === "accepted") {
+        friendshipStatus = "friends";
+      } else if (friendship.status === "pending") {
+        friendshipStatus =
+          friendship.requesterId === currentUser.id
+            ? "pending_sent"
+            : "pending_received";
+      }
+    }
+  }
+
+  // Check if user is blocked
+  let isBlocked = false;
+  if (currentUser && !isOwnProfile) {
+    const [blocked] = await db
+      .select({ id: blocks.id })
+      .from(blocks)
+      .where(
+        and(eq(blocks.blockerId, currentUser.id), eq(blocks.blockedId, userId))
+      )
+      .limit(1);
+    isBlocked = !!blocked;
+  }
+
+  // Get liked post IDs for current user
+  let likedPostIds: string[] = [];
+  if (currentUser && userPosts.length > 0) {
+    const postIds = userPosts.map((p) => p.id);
+    const userLikes = await db
+      .select({ targetId: likes.targetId })
+      .from(likes)
+      .where(
+        and(
+          eq(likes.userId, currentUser.id),
+          eq(likes.targetType, "post"),
+          inArray(likes.targetId, postIds)
+        )
+      );
+    likedPostIds = userLikes.map((l) => l.targetId);
+  }
+
   // Map posts to PostData format
   const postsData: PostData[] = userPosts.map((post) => ({
     ...post,
@@ -94,7 +173,7 @@ export default async function ProfilePage({ params }: ProfilePageProps) {
       avatarUrl: user.avatarUrl,
       isVerified: user.isVerified,
     },
-    isLiked: false, // TODO: Check if current user liked each post
+    isLiked: likedPostIds.includes(post.id),
     isOwnPost: isOwnProfile,
   }));
 
@@ -138,9 +217,18 @@ export default async function ProfilePage({ params }: ProfilePageProps) {
           </div>
           <div className="mt-4 sm:mt-0">
             {isOwnProfile ? (
-              <Button variant="outline">Edit Profile</Button>
+              <Link href="/settings">
+                <Button variant="outline">
+                  <Settings className="mr-2 h-4 w-4" />
+                  Edit Profile
+                </Button>
+              </Link>
             ) : (
-              <Button>Add Friend</Button>
+              <ProfileActions
+                userId={userId}
+                friendshipStatus={friendshipStatus}
+                isBlocked={isBlocked}
+              />
             )}
           </div>
         </div>

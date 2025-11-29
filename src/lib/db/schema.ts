@@ -288,3 +288,255 @@ export type Notification = typeof notifications.$inferSelect;
 export type NewNotification = typeof notifications.$inferInsert;
 export type Session = typeof sessions.$inferSelect;
 export type NewSession = typeof sessions.$inferInsert;
+
+// Saved Posts table
+export const savedPosts = sqliteTable(
+  "saved_posts",
+  {
+    id: text("id")
+      .primaryKey()
+      .$defaultFn(() => crypto.randomUUID()),
+    userId: text("user_id")
+      .notNull()
+      .references(() => users.id, { onDelete: "cascade" }),
+    postId: text("post_id")
+      .notNull()
+      .references(() => posts.id, { onDelete: "cascade" }),
+    createdAt: integer("created_at", { mode: "timestamp" })
+      .notNull()
+      .default(sql`(unixepoch())`),
+  },
+  (table) => [
+    uniqueIndex("idx_saved_posts_unique").on(table.userId, table.postId),
+    index("idx_saved_posts_user").on(table.userId, table.createdAt),
+  ]
+);
+
+// Events table
+export const events = sqliteTable(
+  "events",
+  {
+    id: text("id")
+      .primaryKey()
+      .$defaultFn(() => crypto.randomUUID()),
+    creatorId: text("creator_id")
+      .notNull()
+      .references(() => users.id, { onDelete: "cascade" }),
+    title: text("title").notNull(),
+    description: text("description"),
+    coverImageUrl: text("cover_image_url"),
+    location: text("location"),
+    locationType: text("location_type", {
+      enum: ["in-person", "online", "hybrid"],
+    }).default("in-person"),
+    eventUrl: text("event_url"),
+    startDate: integer("start_date", { mode: "timestamp" }).notNull(),
+    endDate: integer("end_date", { mode: "timestamp" }),
+    isPublic: integer("is_public", { mode: "boolean" }).default(true),
+    maxAttendees: integer("max_attendees"),
+    createdAt: integer("created_at", { mode: "timestamp" })
+      .notNull()
+      .default(sql`(unixepoch())`),
+    updatedAt: integer("updated_at", { mode: "timestamp" })
+      .notNull()
+      .default(sql`(unixepoch())`),
+  },
+  (table) => [
+    index("idx_events_creator").on(table.creatorId),
+    index("idx_events_start_date").on(table.startDate),
+  ]
+);
+
+// Event Attendees table
+export const eventAttendees = sqliteTable(
+  "event_attendees",
+  {
+    id: text("id")
+      .primaryKey()
+      .$defaultFn(() => crypto.randomUUID()),
+    eventId: text("event_id")
+      .notNull()
+      .references(() => events.id, { onDelete: "cascade" }),
+    userId: text("user_id")
+      .notNull()
+      .references(() => users.id, { onDelete: "cascade" }),
+    status: text("status", {
+      enum: ["going", "interested", "not_going"],
+    }).default("going"),
+    createdAt: integer("created_at", { mode: "timestamp" })
+      .notNull()
+      .default(sql`(unixepoch())`),
+  },
+  (table) => [
+    uniqueIndex("idx_event_attendees_unique").on(table.eventId, table.userId),
+    index("idx_event_attendees_event").on(table.eventId),
+  ]
+);
+
+// Reports table
+export const reports = sqliteTable(
+  "reports",
+  {
+    id: text("id")
+      .primaryKey()
+      .$defaultFn(() => crypto.randomUUID()),
+    reporterId: text("reporter_id")
+      .notNull()
+      .references(() => users.id, { onDelete: "cascade" }),
+    targetType: text("target_type", {
+      enum: ["user", "post", "comment", "message", "event"],
+    }).notNull(),
+    targetId: text("target_id").notNull(),
+    reason: text("reason", {
+      enum: [
+        "spam",
+        "harassment",
+        "hate_speech",
+        "violence",
+        "nudity",
+        "false_information",
+        "other",
+      ],
+    }).notNull(),
+    description: text("description"),
+    status: text("status", {
+      enum: ["pending", "reviewed", "resolved", "dismissed"],
+    }).default("pending"),
+    reviewedBy: text("reviewed_by").references(() => users.id, {
+      onDelete: "set null",
+    }),
+    reviewedAt: integer("reviewed_at", { mode: "timestamp" }),
+    createdAt: integer("created_at", { mode: "timestamp" })
+      .notNull()
+      .default(sql`(unixepoch())`),
+  },
+  (table) => [
+    index("idx_reports_target").on(table.targetType, table.targetId),
+    index("idx_reports_status").on(table.status, table.createdAt),
+  ]
+);
+
+// Blocks table
+export const blocks = sqliteTable(
+  "blocks",
+  {
+    id: text("id")
+      .primaryKey()
+      .$defaultFn(() => crypto.randomUUID()),
+    blockerId: text("blocker_id")
+      .notNull()
+      .references(() => users.id, { onDelete: "cascade" }),
+    blockedId: text("blocked_id")
+      .notNull()
+      .references(() => users.id, { onDelete: "cascade" }),
+    createdAt: integer("created_at", { mode: "timestamp" })
+      .notNull()
+      .default(sql`(unixepoch())`),
+  },
+  (table) => [
+    uniqueIndex("idx_blocks_unique").on(table.blockerId, table.blockedId),
+    index("idx_blocks_blocker").on(table.blockerId),
+  ]
+);
+
+// Hashtags table
+export const hashtags = sqliteTable(
+  "hashtags",
+  {
+    id: text("id")
+      .primaryKey()
+      .$defaultFn(() => crypto.randomUUID()),
+    name: text("name").notNull().unique(),
+    postCount: integer("post_count").default(0),
+    createdAt: integer("created_at", { mode: "timestamp" })
+      .notNull()
+      .default(sql`(unixepoch())`),
+  },
+  (table) => [
+    index("idx_hashtags_trending").on(table.postCount, table.createdAt),
+  ]
+);
+
+// Post Hashtags junction table
+export const postHashtags = sqliteTable(
+  "post_hashtags",
+  {
+    postId: text("post_id")
+      .notNull()
+      .references(() => posts.id, { onDelete: "cascade" }),
+    hashtagId: text("hashtag_id")
+      .notNull()
+      .references(() => hashtags.id, { onDelete: "cascade" }),
+    createdAt: integer("created_at", { mode: "timestamp" })
+      .notNull()
+      .default(sql`(unixepoch())`),
+  },
+  (table) => [index("idx_post_hashtags_hashtag").on(table.hashtagId)]
+);
+
+// Shares/Reposts table
+export const shares = sqliteTable(
+  "shares",
+  {
+    id: text("id")
+      .primaryKey()
+      .$defaultFn(() => crypto.randomUUID()),
+    userId: text("user_id")
+      .notNull()
+      .references(() => users.id, { onDelete: "cascade" }),
+    postId: text("post_id")
+      .notNull()
+      .references(() => posts.id, { onDelete: "cascade" }),
+    comment: text("comment"),
+    createdAt: integer("created_at", { mode: "timestamp" })
+      .notNull()
+      .default(sql`(unixepoch())`),
+  },
+  (table) => [
+    uniqueIndex("idx_shares_unique").on(table.userId, table.postId),
+    index("idx_shares_post").on(table.postId),
+  ]
+);
+
+// Follows table (separate from friendships)
+export const follows = sqliteTable(
+  "follows",
+  {
+    id: text("id")
+      .primaryKey()
+      .$defaultFn(() => crypto.randomUUID()),
+    followerId: text("follower_id")
+      .notNull()
+      .references(() => users.id, { onDelete: "cascade" }),
+    followingId: text("following_id")
+      .notNull()
+      .references(() => users.id, { onDelete: "cascade" }),
+    createdAt: integer("created_at", { mode: "timestamp" })
+      .notNull()
+      .default(sql`(unixepoch())`),
+  },
+  (table) => [
+    uniqueIndex("idx_follows_unique").on(table.followerId, table.followingId),
+    index("idx_follows_following").on(table.followingId),
+  ]
+);
+
+// Type exports for new tables
+export type SavedPost = typeof savedPosts.$inferSelect;
+export type NewSavedPost = typeof savedPosts.$inferInsert;
+export type Event = typeof events.$inferSelect;
+export type NewEvent = typeof events.$inferInsert;
+export type EventAttendee = typeof eventAttendees.$inferSelect;
+export type NewEventAttendee = typeof eventAttendees.$inferInsert;
+export type Report = typeof reports.$inferSelect;
+export type NewReport = typeof reports.$inferInsert;
+export type Block = typeof blocks.$inferSelect;
+export type NewBlock = typeof blocks.$inferInsert;
+export type Hashtag = typeof hashtags.$inferSelect;
+export type NewHashtag = typeof hashtags.$inferInsert;
+export type PostHashtag = typeof postHashtags.$inferSelect;
+export type NewPostHashtag = typeof postHashtags.$inferInsert;
+export type Share = typeof shares.$inferSelect;
+export type NewShare = typeof shares.$inferInsert;
+export type Follow = typeof follows.$inferSelect;
+export type NewFollow = typeof follows.$inferInsert;

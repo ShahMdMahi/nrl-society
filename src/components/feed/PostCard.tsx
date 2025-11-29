@@ -48,6 +48,8 @@ export interface PostData {
   };
   isLiked: boolean;
   isOwnPost?: boolean;
+  isSaved?: boolean;
+  isShared?: boolean;
 }
 
 interface PostCardProps {
@@ -59,6 +61,12 @@ export function PostCard({ post, onDelete }: PostCardProps) {
   const [isLiked, setIsLiked] = useState(post.isLiked);
   const [likesCount, setLikesCount] = useState(post.likesCount ?? 0);
   const [isLiking, setIsLiking] = useState(false);
+  const [isSaved, setIsSaved] = useState(post.isSaved ?? false);
+  const [isSaving, setIsSaving] = useState(false);
+  const [isShared, setIsShared] = useState(post.isShared ?? false);
+  const [sharesCount, setSharesCount] = useState(post.sharesCount ?? 0);
+  const [isSharing, setIsSharing] = useState(false);
+  const [isReporting, setIsReporting] = useState(false);
 
   const handleLike = async () => {
     if (isLiking) return;
@@ -109,6 +117,109 @@ export function PostCard({ post, onDelete }: PostCardProps) {
     }
   };
 
+  const handleSave = async () => {
+    if (isSaving) return;
+    setIsSaving(true);
+
+    const wasSaved = isSaved;
+    setIsSaved(!wasSaved);
+
+    try {
+      if (wasSaved) {
+        const res = await fetch(`/api/v1/saved?postId=${post.id}`, {
+          method: "DELETE",
+        });
+        const data = (await res.json()) as { success: boolean };
+        if (!data.success) {
+          setIsSaved(wasSaved);
+        }
+      } else {
+        const res = await fetch("/api/v1/saved", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ postId: post.id }),
+        });
+        const data = (await res.json()) as { success: boolean };
+        if (!data.success) {
+          setIsSaved(wasSaved);
+        }
+      }
+    } catch {
+      setIsSaved(wasSaved);
+    } finally {
+      setIsSaving(false);
+    }
+  };
+
+  const handleShare = async () => {
+    if (isSharing) return;
+    setIsSharing(true);
+
+    const wasShared = isShared;
+    setIsShared(!wasShared);
+    setSharesCount((prev) => (wasShared ? prev - 1 : prev + 1));
+
+    try {
+      const res = await fetch(`/api/v1/posts/${post.id}/share`, {
+        method: wasShared ? "DELETE" : "POST",
+      });
+      const data = (await res.json()) as { success: boolean };
+      if (!data.success) {
+        setIsShared(wasShared);
+        setSharesCount((prev) => (wasShared ? prev + 1 : prev - 1));
+      }
+    } catch {
+      setIsShared(wasShared);
+      setSharesCount((prev) => (wasShared ? prev + 1 : prev - 1));
+    } finally {
+      setIsSharing(false);
+    }
+  };
+
+  const handleReport = async () => {
+    if (isReporting) return;
+    const reason = prompt(
+      "Why are you reporting this post?\n\nOptions: spam, harassment, hate_speech, violence, nudity, false_information, other"
+    );
+    if (!reason) return;
+
+    setIsReporting(true);
+    try {
+      const res = await fetch("/api/v1/reports", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          targetType: "post",
+          targetId: post.id,
+          reason: reason.toLowerCase().includes("spam")
+            ? "spam"
+            : reason.toLowerCase().includes("harass")
+              ? "harassment"
+              : reason.toLowerCase().includes("hate")
+                ? "hate_speech"
+                : reason.toLowerCase().includes("violen")
+                  ? "violence"
+                  : reason.toLowerCase().includes("nud")
+                    ? "nudity"
+                    : reason.toLowerCase().includes("false")
+                      ? "false_information"
+                      : "other",
+          description: reason,
+        }),
+      });
+      const data = (await res.json()) as { success: boolean };
+      if (data.success) {
+        alert(
+          "Report submitted. Thank you for helping keep our community safe."
+        );
+      }
+    } catch {
+      alert("Failed to submit report. Please try again.");
+    } finally {
+      setIsReporting(false);
+    }
+  };
+
   const timeAgo = formatDistanceToNow(new Date(post.createdAt), {
     addSuffix: true,
   });
@@ -153,9 +264,11 @@ export function PostCard({ post, onDelete }: PostCardProps) {
               </Button>
             </DropdownMenuTrigger>
             <DropdownMenuContent align="end">
-              <DropdownMenuItem>
-                <Bookmark className="mr-2 h-4 w-4" />
-                Save post
+              <DropdownMenuItem onClick={handleSave} disabled={isSaving}>
+                <Bookmark
+                  className={cn("mr-2 h-4 w-4", isSaved && "fill-current")}
+                />
+                {isSaved ? "Unsave post" : "Save post"}
               </DropdownMenuItem>
               {post.isOwnPost ? (
                 <DropdownMenuItem
@@ -166,7 +279,7 @@ export function PostCard({ post, onDelete }: PostCardProps) {
                   Delete post
                 </DropdownMenuItem>
               ) : (
-                <DropdownMenuItem>
+                <DropdownMenuItem onClick={handleReport} disabled={isReporting}>
                   <Flag className="mr-2 h-4 w-4" />
                   Report post
                 </DropdownMenuItem>
@@ -216,9 +329,24 @@ export function PostCard({ post, onDelete }: PostCardProps) {
               </span>
             </Button>
           </Link>
-          <Button variant="ghost" size="sm" className="gap-2" disabled>
-            <Share2 className="h-4 w-4" />
-            <span>{(post.sharesCount ?? 0) > 0 ? post.sharesCount : ""}</span>
+          <Button
+            variant="ghost"
+            size="sm"
+            className={cn("gap-2", isShared && "text-green-500")}
+            onClick={handleShare}
+            disabled={isSharing}
+          >
+            <Share2 className={cn("h-4 w-4", isShared && "fill-current")} />
+            <span>{sharesCount > 0 ? sharesCount : ""}</span>
+          </Button>
+          <Button
+            variant="ghost"
+            size="sm"
+            className={cn("ml-auto", isSaved && "text-yellow-500")}
+            onClick={handleSave}
+            disabled={isSaving}
+          >
+            <Bookmark className={cn("h-4 w-4", isSaved && "fill-current")} />
           </Button>
         </div>
       </CardFooter>
