@@ -2,7 +2,6 @@
 
 import { useState, useEffect, useCallback, use } from "react";
 import Link from "next/link";
-import Image from "next/image";
 import { useRouter } from "next/navigation";
 import { formatDistanceToNow } from "date-fns";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
@@ -35,6 +34,7 @@ import {
   Send,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
+import { MediaGallery } from "@/components/shared/MediaGallery";
 
 interface PostData {
   id: string;
@@ -54,6 +54,7 @@ interface PostData {
   };
   isLiked: boolean;
   isOwnPost?: boolean;
+  isSaved?: boolean;
 }
 
 interface CommentData {
@@ -86,6 +87,9 @@ export default function PostPage({ params }: PostPageProps) {
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [isLiked, setIsLiked] = useState(false);
   const [likesCount, setLikesCount] = useState(0);
+  const [isSaved, setIsSaved] = useState(false);
+  const [isSaving, setIsSaving] = useState(false);
+  const [isReporting, setIsReporting] = useState(false);
   const [cursor, setCursor] = useState<string | undefined>();
   const [hasMore, setHasMore] = useState(false);
 
@@ -101,6 +105,7 @@ export default function PostPage({ params }: PostPageProps) {
         setPost(data.data);
         setIsLiked(data.data.isLiked);
         setLikesCount(data.data.likesCount ?? 0);
+        setIsSaved(data.data.isSaved ?? false);
       }
     } catch (error) {
       console.error("Failed to fetch post:", error);
@@ -246,6 +251,84 @@ export default function PostPage({ params }: PostPageProps) {
     }
   };
 
+  const handleSave = async () => {
+    if (isSaving) return;
+    setIsSaving(true);
+
+    const wasSaved = isSaved;
+    setIsSaved(!wasSaved);
+
+    try {
+      if (wasSaved) {
+        const res = await fetch(`/api/v1/saved?postId=${postId}`, {
+          method: "DELETE",
+        });
+        const data = (await res.json()) as { success: boolean };
+        if (!data.success) {
+          setIsSaved(wasSaved);
+        }
+      } else {
+        const res = await fetch("/api/v1/saved", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ postId }),
+        });
+        const data = (await res.json()) as { success: boolean };
+        if (!data.success) {
+          setIsSaved(wasSaved);
+        }
+      }
+    } catch {
+      setIsSaved(wasSaved);
+    } finally {
+      setIsSaving(false);
+    }
+  };
+
+  const handleReport = async () => {
+    if (isReporting) return;
+    const reason = prompt(
+      "Why are you reporting this post?\n\nOptions: spam, harassment, hate_speech, violence, nudity, false_information, other"
+    );
+    if (!reason) return;
+
+    setIsReporting(true);
+    try {
+      const res = await fetch("/api/v1/reports", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          targetType: "post",
+          targetId: postId,
+          reason: reason.toLowerCase().includes("spam")
+            ? "spam"
+            : reason.toLowerCase().includes("harass")
+              ? "harassment"
+              : reason.toLowerCase().includes("hate")
+                ? "hate_speech"
+                : reason.toLowerCase().includes("violen")
+                  ? "violence"
+                  : reason.toLowerCase().includes("nud")
+                    ? "nudity"
+                    : reason.toLowerCase().includes("false")
+                      ? "false_information"
+                      : "other",
+          description: reason,
+        }),
+      });
+      const data = (await res.json()) as { success: boolean };
+      if (data.success) {
+        alert(
+          "Report submitted. Thank you for helping keep our community safe."
+        );
+      }
+    } catch {
+      alert("Failed to submit report. Please try again.");
+    } finally {
+      setIsReporting(false);
+    }
+  };
+
   if (isLoading) {
     return (
       <div className="mx-auto max-w-2xl space-y-4">
@@ -345,9 +428,11 @@ export default function PostPage({ params }: PostPageProps) {
                 </Button>
               </DropdownMenuTrigger>
               <DropdownMenuContent align="end">
-                <DropdownMenuItem>
-                  <Bookmark className="mr-2 h-4 w-4" />
-                  Save post
+                <DropdownMenuItem onClick={handleSave} disabled={isSaving}>
+                  <Bookmark
+                    className={cn("mr-2 h-4 w-4", isSaved && "fill-current")}
+                  />
+                  {isSaved ? "Unsave post" : "Save post"}
                 </DropdownMenuItem>
                 {post.isOwnPost ? (
                   <DropdownMenuItem
@@ -358,7 +443,10 @@ export default function PostPage({ params }: PostPageProps) {
                     Delete post
                   </DropdownMenuItem>
                 ) : (
-                  <DropdownMenuItem>
+                  <DropdownMenuItem
+                    onClick={handleReport}
+                    disabled={isReporting}
+                  >
                     <Flag className="mr-2 h-4 w-4" />
                     Report post
                   </DropdownMenuItem>
@@ -372,19 +460,7 @@ export default function PostPage({ params }: PostPageProps) {
             <p className="whitespace-pre-wrap">{post.content}</p>
           )}
           {post.mediaUrls && post.mediaUrls.length > 0 && (
-            <div className="mt-4 grid gap-2">
-              {post.mediaUrls.map((url, index) => (
-                <div key={index} className="relative aspect-video w-full">
-                  <Image
-                    src={url}
-                    alt="Post media"
-                    fill
-                    className="rounded-lg object-cover"
-                    unoptimized
-                  />
-                </div>
-              ))}
-            </div>
+            <MediaGallery mediaUrls={post.mediaUrls} className="mt-4" />
           )}
         </CardContent>
         <CardFooter className="border-t pt-3">

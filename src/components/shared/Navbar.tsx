@@ -22,6 +22,7 @@ import {
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 import { Sheet, SheetContent, SheetTrigger } from "@/components/ui/sheet";
+import { ThemeToggle } from "@/components/shared/ThemeToggle";
 import { cn } from "@/lib/utils";
 
 interface NavbarProps {
@@ -81,6 +82,7 @@ export function Navbar({ user }: NavbarProps) {
 
         {/* User Menu (Desktop) */}
         <div className="ml-auto hidden items-center space-x-2 md:flex">
+          <ThemeToggle />
           {user ? (
             <DropdownMenu>
               <DropdownMenuTrigger asChild>

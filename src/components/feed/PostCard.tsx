@@ -2,7 +2,6 @@
 
 import { useState } from "react";
 import Link from "next/link";
-import Image from "next/image";
 import { formatDistanceToNow } from "date-fns";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Button } from "@/components/ui/button";
@@ -29,6 +28,7 @@ import {
   BadgeCheck,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
+import { MediaGallery } from "@/components/shared/MediaGallery";
 
 export interface PostData {
   id: string;
@@ -293,20 +293,7 @@ export function PostCard({ post, onDelete }: PostCardProps) {
           <p className="text-sm whitespace-pre-wrap">{post.content}</p>
         )}
         {post.mediaUrls && post.mediaUrls.length > 0 && (
-          <div className="mt-3 grid gap-2 overflow-hidden rounded-lg">
-            {/* TODO: Implement media gallery */}
-            {post.mediaUrls.map((url, index) => (
-              <div key={index} className="relative aspect-video w-full">
-                <Image
-                  src={url}
-                  alt="Post media"
-                  fill
-                  className="rounded-lg object-cover"
-                  unoptimized
-                />
-              </div>
-            ))}
-          </div>
+          <MediaGallery mediaUrls={post.mediaUrls} className="mt-3" />
         )}
       </CardContent>
       <CardFooter className="border-t pt-3">

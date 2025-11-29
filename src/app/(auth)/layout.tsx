@@ -28,8 +28,8 @@ export default async function AuthLayout({
         <div className="space-y-6">
           <blockquote className="space-y-2">
             <p className="text-lg">
-              &ldquo;Connect with rugby league fans from around the world. Share
-              your passion, discuss matches, and be part of the ultimate NRL
+              &ldquo;Connect with peoples from around the world. Share your
+              passion, discuss anything, and be part of the ultimate NRL
               community.&rdquo;
             </p>
             <footer className="text-primary-foreground/70 text-sm">

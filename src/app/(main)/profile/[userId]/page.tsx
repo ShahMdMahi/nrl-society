@@ -7,6 +7,7 @@ import { getCurrentUser } from "@/lib/auth/session";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Button } from "@/components/ui/button";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { Card, CardContent } from "@/components/ui/card";
 import {
   BadgeCheck,
   Calendar,
@@ -15,6 +16,7 @@ import {
   UserMinus,
   Clock,
   ShieldBan,
+  ImageIcon,
 } from "lucide-react";
 import { eq, sql, or, and, desc, inArray } from "drizzle-orm";
 import { format } from "date-fns";
@@ -88,6 +90,65 @@ export default async function ProfilePage({ params }: ProfilePageProps) {
     .where(eq(posts.userId, userId))
     .orderBy(desc(posts.createdAt))
     .limit(20);
+
+  // Get user's friends list
+  const userFriendships = await db
+    .select({
+      requesterId: friendships.requesterId,
+      addresseeId: friendships.addresseeId,
+    })
+    .from(friendships)
+    .where(
+      and(
+        or(
+          eq(friendships.requesterId, userId),
+          eq(friendships.addresseeId, userId)
+        ),
+        eq(friendships.status, "accepted")
+      )
+    )
+    .limit(12);
+
+  // Get friend IDs
+  const friendIds = userFriendships.map((f) =>
+    f.requesterId === userId ? f.addresseeId : f.requesterId
+  );
+
+  // Fetch friend details
+  let friendsList: {
+    id: string;
+    username: string;
+    displayName: string;
+    avatarUrl: string | null;
+    isVerified: boolean | null;
+  }[] = [];
+
+  if (friendIds.length > 0) {
+    friendsList = await db
+      .select({
+        id: users.id,
+        username: users.username,
+        displayName: users.displayName,
+        avatarUrl: users.avatarUrl,
+        isVerified: users.isVerified,
+      })
+      .from(users)
+      .where(inArray(users.id, friendIds))
+      .limit(12);
+  }
+
+  // Extract photos from posts with media
+  const photosFromPosts = userPosts
+    .filter((p) => p.mediaUrls)
+    .flatMap((p) => {
+      try {
+        const urls = JSON.parse(p.mediaUrls || "[]") as string[];
+        return urls.map((url) => ({ postId: p.id, url }));
+      } catch {
+        return [];
+      }
+    })
+    .slice(0, 9);
 
   const isOwnProfile = currentUser?.id === userId;
 
@@ -274,14 +335,70 @@ export default async function ProfilePage({ params }: ProfilePageProps) {
           )}
         </TabsContent>
         <TabsContent value="photos" className="mt-4">
-          <div className="text-muted-foreground py-12 text-center">
-            <p>No photos yet</p>
-          </div>
+          {photosFromPosts.length === 0 ? (
+            <div className="text-muted-foreground py-12 text-center">
+              <ImageIcon className="mx-auto mb-4 h-12 w-12 opacity-50" />
+              <p>No photos yet</p>
+            </div>
+          ) : (
+            <div className="grid grid-cols-3 gap-2">
+              {photosFromPosts.map((photo, index) => (
+                <Link
+                  key={`${photo.postId}-${index}`}
+                  href={`/post/${photo.postId}`}
+                  className="group relative aspect-square overflow-hidden rounded-lg"
+                >
+                  <Image
+                    src={photo.url}
+                    alt={`Photo ${index + 1}`}
+                    fill
+                    className="object-cover transition-transform group-hover:scale-105"
+                    unoptimized
+                  />
+                </Link>
+              ))}
+            </div>
+          )}
         </TabsContent>
         <TabsContent value="friends" className="mt-4">
-          <div className="text-muted-foreground py-12 text-center">
-            <p>Friends list coming soon</p>
-          </div>
+          {friendsList.length === 0 ? (
+            <div className="text-muted-foreground py-12 text-center">
+              <p>No friends yet</p>
+            </div>
+          ) : (
+            <div className="grid grid-cols-2 gap-3 sm:grid-cols-3">
+              {friendsList.map((friend) => (
+                <Link key={friend.id} href={`/profile/${friend.id}`}>
+                  <Card className="hover:bg-muted/50 transition-colors">
+                    <CardContent className="flex items-center gap-3 p-4">
+                      <Avatar className="h-12 w-12">
+                        <AvatarImage
+                          src={friend.avatarUrl || undefined}
+                          alt={friend.displayName}
+                        />
+                        <AvatarFallback>
+                          {friend.displayName.charAt(0).toUpperCase()}
+                        </AvatarFallback>
+                      </Avatar>
+                      <div className="min-w-0 flex-1">
+                        <div className="flex items-center gap-1">
+                          <p className="truncate text-sm font-medium">
+                            {friend.displayName}
+                          </p>
+                          {friend.isVerified && (
+                            <BadgeCheck className="text-primary fill-primary h-3 w-3 shrink-0" />
+                          )}
+                        </div>
+                        <p className="text-muted-foreground truncate text-xs">
+                          @{friend.username}
+                        </p>
+                      </div>
+                    </CardContent>
+                  </Card>
+                </Link>
+              ))}
+            </div>
+          )}
         </TabsContent>
       </Tabs>
     </div>

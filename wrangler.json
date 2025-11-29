@@ -41,7 +41,10 @@
     }
   ],
   "vars": {
-    "NODE_ENV": "production"
+    "NODE_ENV": "production",
+    "NEXT_PUBLIC_APP_URL": "https://nrl-society.shahmdmahi.workers.dev",
+    "RESEND_API_KEY": "re_g6DJsXXW_ErM2Pq6YbvZSV6Y6yyavZfri",
+    "APP_URL": "https://nrl-society.shahmdmahi.workers.dev"
   },
   "observability": {
     "enabled": true,

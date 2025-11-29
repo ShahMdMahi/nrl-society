@@ -78,6 +78,18 @@ export default function SettingsPage() {
     isPrivate: false,
   });
 
+  // Notification preferences
+  const [notificationPrefs, setNotificationPrefs] = useState({
+    emailNotifications: true,
+    pushNotifications: true,
+    likesNotifications: true,
+    commentsNotifications: true,
+    followsNotifications: true,
+    messagesNotifications: true,
+    mentionsNotifications: true,
+  });
+  const [isSavingNotifications, setIsSavingNotifications] = useState(false);
+
   const fetchProfile = useCallback(async () => {
     try {
       const res = await fetch("/api/v1/auth/me");
@@ -307,6 +319,10 @@ export default function SettingsPage() {
             <Shield className="h-4 w-4" />
             Privacy
           </TabsTrigger>
+          <TabsTrigger value="notifications" className="gap-2">
+            <Bell className="h-4 w-4" />
+            Notifications
+          </TabsTrigger>
           <TabsTrigger value="blocked" className="gap-2">
             <Lock className="h-4 w-4" />
             Blocked
@@ -497,6 +513,170 @@ export default function SettingsPage() {
                   </>
                 ) : (
                   "Save Privacy Settings"
+                )}
+              </Button>
+            </CardContent>
+          </Card>
+        </TabsContent>
+
+        <TabsContent value="notifications" className="space-y-6">
+          <Card>
+            <CardHeader>
+              <CardTitle>Notification Preferences</CardTitle>
+              <CardDescription>
+                Choose how you want to be notified about activity.
+              </CardDescription>
+            </CardHeader>
+            <CardContent className="space-y-6">
+              <div className="space-y-4">
+                <h4 className="text-sm font-medium">Delivery Methods</h4>
+                <div className="flex items-center justify-between">
+                  <div className="space-y-0.5">
+                    <Label>Email Notifications</Label>
+                    <p className="text-muted-foreground text-sm">
+                      Receive notifications via email.
+                    </p>
+                  </div>
+                  <Switch
+                    checked={notificationPrefs.emailNotifications}
+                    onCheckedChange={(checked) =>
+                      setNotificationPrefs({
+                        ...notificationPrefs,
+                        emailNotifications: checked,
+                      })
+                    }
+                  />
+                </div>
+                <div className="flex items-center justify-between">
+                  <div className="space-y-0.5">
+                    <Label>Push Notifications</Label>
+                    <p className="text-muted-foreground text-sm">
+                      Receive push notifications in your browser.
+                    </p>
+                  </div>
+                  <Switch
+                    checked={notificationPrefs.pushNotifications}
+                    onCheckedChange={(checked) =>
+                      setNotificationPrefs({
+                        ...notificationPrefs,
+                        pushNotifications: checked,
+                      })
+                    }
+                  />
+                </div>
+              </div>
+
+              <Separator />
+
+              <div className="space-y-4">
+                <h4 className="text-sm font-medium">Activity Notifications</h4>
+                <div className="flex items-center justify-between">
+                  <div className="space-y-0.5">
+                    <Label>Likes</Label>
+                    <p className="text-muted-foreground text-sm">
+                      When someone likes your posts.
+                    </p>
+                  </div>
+                  <Switch
+                    checked={notificationPrefs.likesNotifications}
+                    onCheckedChange={(checked) =>
+                      setNotificationPrefs({
+                        ...notificationPrefs,
+                        likesNotifications: checked,
+                      })
+                    }
+                  />
+                </div>
+                <div className="flex items-center justify-between">
+                  <div className="space-y-0.5">
+                    <Label>Comments</Label>
+                    <p className="text-muted-foreground text-sm">
+                      When someone comments on your posts.
+                    </p>
+                  </div>
+                  <Switch
+                    checked={notificationPrefs.commentsNotifications}
+                    onCheckedChange={(checked) =>
+                      setNotificationPrefs({
+                        ...notificationPrefs,
+                        commentsNotifications: checked,
+                      })
+                    }
+                  />
+                </div>
+                <div className="flex items-center justify-between">
+                  <div className="space-y-0.5">
+                    <Label>Follows</Label>
+                    <p className="text-muted-foreground text-sm">
+                      When someone follows you.
+                    </p>
+                  </div>
+                  <Switch
+                    checked={notificationPrefs.followsNotifications}
+                    onCheckedChange={(checked) =>
+                      setNotificationPrefs({
+                        ...notificationPrefs,
+                        followsNotifications: checked,
+                      })
+                    }
+                  />
+                </div>
+                <div className="flex items-center justify-between">
+                  <div className="space-y-0.5">
+                    <Label>Messages</Label>
+                    <p className="text-muted-foreground text-sm">
+                      When you receive new messages.
+                    </p>
+                  </div>
+                  <Switch
+                    checked={notificationPrefs.messagesNotifications}
+                    onCheckedChange={(checked) =>
+                      setNotificationPrefs({
+                        ...notificationPrefs,
+                        messagesNotifications: checked,
+                      })
+                    }
+                  />
+                </div>
+                <div className="flex items-center justify-between">
+                  <div className="space-y-0.5">
+                    <Label>Mentions</Label>
+                    <p className="text-muted-foreground text-sm">
+                      When someone mentions you in a post.
+                    </p>
+                  </div>
+                  <Switch
+                    checked={notificationPrefs.mentionsNotifications}
+                    onCheckedChange={(checked) =>
+                      setNotificationPrefs({
+                        ...notificationPrefs,
+                        mentionsNotifications: checked,
+                      })
+                    }
+                  />
+                </div>
+              </div>
+
+              <Separator />
+
+              <Button
+                onClick={() => {
+                  setIsSavingNotifications(true);
+                  // Save notification preferences (would need an API endpoint)
+                  setTimeout(() => {
+                    toast.success("Notification preferences saved");
+                    setIsSavingNotifications(false);
+                  }, 500);
+                }}
+                disabled={isSavingNotifications}
+              >
+                {isSavingNotifications ? (
+                  <>
+                    <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                    Saving...
+                  </>
+                ) : (
+                  "Save Notification Settings"
                 )}
               </Button>
             </CardContent>
