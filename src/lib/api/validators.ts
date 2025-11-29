@@ -73,11 +73,27 @@ export const loginSchema = z.object({
 });
 
 // User schemas
+// Custom validator for URLs that accepts both full URLs and relative paths
+const imageUrlSchema = z.string().refine(
+  (val) => {
+    // Accept relative paths starting with /media/
+    if (val.startsWith("/media/")) return true;
+    // Accept full URLs
+    try {
+      new URL(val);
+      return true;
+    } catch {
+      return false;
+    }
+  },
+  { message: "Invalid URL format" }
+);
+
 export const updateProfileSchema = z.object({
   displayName: displayNameSchema.optional(),
   bio: z.string().max(500, "Bio must be at most 500 characters").optional(),
-  avatarUrl: z.string().url("Invalid avatar URL").optional().nullable(),
-  coverUrl: z.string().url("Invalid cover URL").optional().nullable(),
+  avatarUrl: imageUrlSchema.optional().nullable(),
+  coverUrl: imageUrlSchema.optional().nullable(),
   isPrivate: z.boolean().optional(),
 });
 
@@ -88,7 +104,7 @@ export const createPostSchema = z.object({
     .max(5000, "Post content must be at most 5000 characters")
     .optional(),
   mediaUrls: z
-    .array(z.string().url())
+    .array(imageUrlSchema)
     .max(10, "Maximum 10 media files")
     .optional(),
   visibility: z.enum(["public", "friends", "private"]).default("public"),
