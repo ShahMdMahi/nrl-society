@@ -16,31 +16,13 @@ const securityHeaders = {
   // Permissions policy
   "Permissions-Policy":
     "camera=(), microphone=(), geolocation=(), interest-cohort=()",
-  // HSTS - enforce HTTPS (1 year)
-  "Strict-Transport-Security": "max-age=31536000; includeSubDomains; preload",
 };
 
 /**
- * Content Security Policy for the app
+ * Edge Middleware for Cloudflare Workers
+ * Runs on the edge before requests are completed
  */
-const cspDirectives = [
-  "default-src 'self'",
-  "script-src 'self' 'unsafe-inline' 'unsafe-eval'", // Required for Next.js
-  "style-src 'self' 'unsafe-inline'", // Required for inline styles
-  "img-src 'self' data: blob: https:", // Allow images from HTTPS sources
-  "font-src 'self' data:",
-  "connect-src 'self' https:", // API calls
-  "frame-ancestors 'none'", // Prevent embedding
-  "form-action 'self'",
-  "base-uri 'self'",
-  "object-src 'none'",
-];
-
-/**
- * Next.js 16+ Proxy (formerly Middleware)
- * Runs before requests are completed to modify responses
- */
-export function proxy(request: NextRequest) {
+export function middleware(request: NextRequest) {
   // Get the response
   const response = NextResponse.next();
 
@@ -49,16 +31,11 @@ export function proxy(request: NextRequest) {
     response.headers.set(key, value);
   });
 
-  // Apply CSP (not too strict for development)
-  if (process.env.NODE_ENV === "production") {
-    response.headers.set("Content-Security-Policy", cspDirectives.join("; "));
-  }
-
   return response;
 }
 
 /**
- * Match all routes except static files and api routes that handle their own headers
+ * Match all routes except static files
  */
 export const config = {
   matcher: [
