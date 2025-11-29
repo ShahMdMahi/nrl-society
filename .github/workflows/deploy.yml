@@ -29,14 +29,17 @@ jobs:
       - name: Build for Cloudflare
         run: pnpm run build:worker
 
+      - name: Upload secrets to Cloudflare
+        run: |
+          echo "${{ secrets.RESEND_API_KEY }}" | pnpm exec wrangler secret put RESEND_API_KEY
+        env:
+          CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+          CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
+
       - name: Deploy to Cloudflare Workers
         uses: cloudflare/wrangler-action@v3
         with:
           apiToken: ${{ secrets.CLOUDFLARE_API_TOKEN }}
           accountId: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
           command: deploy
-          secrets: |
-            RESEND_API_KEY
           packageManager: pnpm
-        env:
-          RESEND_API_KEY: ${{ secrets.RESEND_API_KEY }}
