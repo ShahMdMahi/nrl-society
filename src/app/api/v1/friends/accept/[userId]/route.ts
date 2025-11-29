@@ -1,28 +1,31 @@
 import { NextRequest } from "next/server";
 import { getDB } from "@/lib/cloudflare/d1";
 import { friendships, users, notifications } from "@/lib/db/schema";
-import { getCurrentUser } from "@/lib/auth/session";
-import { success, error } from "@/lib/api/response";
+import {
+  success,
+  notFound,
+  serverError,
+  withAuth,
+  logError,
+  ApiContext,
+} from "@/lib/api";
 import { eq, and } from "drizzle-orm";
 
-interface RouteContext {
-  params: Promise<{ userId: string }>;
+interface AcceptParams {
+  userId: string;
 }
 
 // POST /api/v1/friends/accept/:userId - Accept friend request
-export async function POST(_request: NextRequest, context: RouteContext) {
+async function handleAcceptFriendRequest(
+  _request: NextRequest,
+  { user, requestId }: ApiContext,
+  params?: AcceptParams
+) {
   try {
-    const currentUser = await getCurrentUser();
-
-    if (!currentUser) {
-      return error(
-        "UNAUTHORIZED",
-        "Please log in to accept friend requests",
-        401
-      );
+    const requesterId = params?.userId;
+    if (!requesterId) {
+      return notFound("Friend request");
     }
-
-    const { userId } = await context.params;
 
     const db = await getDB();
 
@@ -32,22 +35,22 @@ export async function POST(_request: NextRequest, context: RouteContext) {
       .from(friendships)
       .where(
         and(
-          eq(friendships.requesterId, userId),
-          eq(friendships.addresseeId, currentUser.id),
+          eq(friendships.requesterId, requesterId),
+          eq(friendships.addresseeId, user.id),
           eq(friendships.status, "pending")
         )
       )
       .limit(1);
 
     if (!friendship) {
-      return error("NOT_FOUND", "Friend request not found", 404);
+      return notFound("Friend request");
     }
 
     // Get requester info for notification
     const [requester] = await db
       .select({ displayName: users.displayName })
       .from(users)
-      .where(eq(users.id, userId))
+      .where(eq(users.id, requesterId))
       .limit(1);
 
     // Accept the friend request
@@ -60,21 +63,23 @@ export async function POST(_request: NextRequest, context: RouteContext) {
     const notificationId = crypto.randomUUID();
     await db.insert(notifications).values({
       id: notificationId,
-      userId: userId,
+      userId: requesterId,
       type: "friend_accepted",
-      actorId: currentUser.id,
-      content: `${currentUser.displayName} accepted your friend request`,
+      actorId: user.id,
+      content: `accepted your friend request`,
     });
 
     return success({
       message: "Friend request accepted",
       friend: {
-        id: userId,
+        id: requesterId,
         displayName: requester?.displayName,
       },
     });
   } catch (err) {
-    console.error("Accept friend request error:", err);
-    return error("INTERNAL_ERROR", "Failed to accept friend request", 500);
+    logError(requestId, "accept_friend_request_error", err);
+    return serverError("Failed to accept friend request");
   }
 }
+
+export const POST = withAuth<AcceptParams>(handleAcceptFriendRequest);

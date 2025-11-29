@@ -1,44 +1,36 @@
 import { NextRequest } from "next/server";
 import { getDB } from "@/lib/cloudflare/d1";
 import { users, posts, friendships } from "@/lib/db/schema";
-import {
-  getCurrentUser,
-  validateApiSession,
-  clearUserCache,
-} from "@/lib/auth/session";
+import { clearUserCache } from "@/lib/auth/session";
 import {
   success,
-  unauthorized,
   notFound,
   forbidden,
-  validationError,
   serverError,
   updateProfileSchema,
-  validateBody,
+  withAuth,
+  withOptionalAuth,
+  parseBody,
+  logError,
+  ApiContext,
+  OptionalApiContext,
 } from "@/lib/api";
 import { eq, sql, or, and } from "drizzle-orm";
 
-interface RouteParams {
-  params: Promise<{ userId: string }>;
+interface UserParams {
+  userId: string;
 }
 
 // GET /api/v1/users/[userId] - Get user profile
-export async function GET(request: NextRequest, { params }: RouteParams) {
+async function handleGetUserProfile(
+  _request: NextRequest,
+  { user: currentUser, requestId }: OptionalApiContext,
+  params?: UserParams
+) {
   try {
-    const { userId } = await params;
-
-    // Check authentication (optional for public profiles)
-    let currentUserId: string | null = null;
-    const currentUser = await getCurrentUser();
-
-    if (currentUser) {
-      currentUserId = currentUser.id;
-    } else {
-      const authHeader = request.headers.get("Authorization");
-      const session = await validateApiSession(authHeader);
-      if (session) {
-        currentUserId = session.userId;
-      }
+    const userId = params?.userId;
+    if (!userId) {
+      return notFound("User");
     }
 
     const db = await getDB();
@@ -88,8 +80,8 @@ export async function GET(request: NextRequest, { params }: RouteParams) {
     let friendshipStatus: string | null = null;
     let isOwnProfile = false;
 
-    if (currentUserId) {
-      isOwnProfile = currentUserId === userId;
+    if (currentUser) {
+      isOwnProfile = currentUser.id === userId;
 
       if (!isOwnProfile) {
         const [friendship] = await db
@@ -101,12 +93,12 @@ export async function GET(request: NextRequest, { params }: RouteParams) {
           .where(
             or(
               and(
-                eq(friendships.requesterId, currentUserId),
+                eq(friendships.requesterId, currentUser.id),
                 eq(friendships.addresseeId, userId)
               ),
               and(
                 eq(friendships.requesterId, userId),
-                eq(friendships.addresseeId, currentUserId)
+                eq(friendships.addresseeId, currentUser.id)
               )
             )
           )
@@ -115,7 +107,7 @@ export async function GET(request: NextRequest, { params }: RouteParams) {
         if (friendship) {
           if (friendship.status === "pending") {
             friendshipStatus =
-              friendship.requesterId === currentUserId
+              friendship.requesterId === currentUser.id
                 ? "pending_sent"
                 : "pending_received";
           } else {
@@ -135,47 +127,31 @@ export async function GET(request: NextRequest, { params }: RouteParams) {
       },
     });
   } catch (err) {
-    console.error("Get user profile error:", err);
+    logError(requestId, "get_user_profile_error", err);
     return serverError("Failed to get user profile");
   }
 }
 
 // PATCH /api/v1/users/[userId] - Update user profile
-export async function PATCH(request: NextRequest, { params }: RouteParams) {
+async function handleUpdateUserProfile(
+  request: NextRequest,
+  { user, requestId }: ApiContext,
+  params?: UserParams
+) {
   try {
-    const { userId } = await params;
-
-    // Check authentication
-    let currentUserId: string | null = null;
-    const currentUser = await getCurrentUser();
-
-    if (currentUser) {
-      currentUserId = currentUser.id;
-    } else {
-      const authHeader = request.headers.get("Authorization");
-      const session = await validateApiSession(authHeader);
-      if (session) {
-        currentUserId = session.userId;
-      }
-    }
-
-    if (!currentUserId) {
-      return unauthorized();
+    const userId = params?.userId;
+    if (!userId) {
+      return notFound("User");
     }
 
     // Can only update own profile
-    if (currentUserId !== userId) {
+    if (user.id !== userId) {
       return forbidden();
     }
 
-    // Validate request body
-    const { data, errors: validationErrors } = await validateBody(
-      request,
-      updateProfileSchema
-    );
-
-    if (validationErrors) {
-      return validationError("Invalid input", validationErrors);
+    const parsed = await parseBody(request, updateProfileSchema);
+    if (!parsed.success) {
+      return parsed.error;
     }
 
     const db = await getDB();
@@ -184,7 +160,7 @@ export async function PATCH(request: NextRequest, { params }: RouteParams) {
     const [updatedUser] = await db
       .update(users)
       .set({
-        ...data,
+        ...parsed.data,
         updatedAt: new Date(),
       })
       .where(eq(users.id, userId))
@@ -208,7 +184,10 @@ export async function PATCH(request: NextRequest, { params }: RouteParams) {
 
     return success({ user: updatedUser });
   } catch (err) {
-    console.error("Update user profile error:", err);
+    logError(requestId, "update_user_profile_error", err);
     return serverError("Failed to update profile");
   }
 }
+
+export const GET = withOptionalAuth<UserParams>(handleGetUserProfile);
+export const PATCH = withAuth<UserParams>(handleUpdateUserProfile);

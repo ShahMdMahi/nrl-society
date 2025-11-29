@@ -1,26 +1,34 @@
 import { NextRequest } from "next/server";
 import { getDB } from "@/lib/cloudflare/d1";
 import { conversationParticipants, messages, users } from "@/lib/db/schema";
-import { getCurrentUser } from "@/lib/auth/session";
-import { success, error } from "@/lib/api/response";
+import {
+  success,
+  error,
+  serverError,
+  withAuth,
+  logError,
+  ApiContext,
+} from "@/lib/api";
 import { eq, desc, and, sql } from "drizzle-orm";
 
-interface RouteContext {
-  params: Promise<{ conversationId: string }>;
+interface RouteParams {
+  conversationId: string;
 }
 
 // GET /api/v1/conversations/:conversationId/messages - Get messages
-export async function GET(request: NextRequest, context: RouteContext) {
+async function handleGetMessages(
+  request: NextRequest,
+  { user, requestId }: ApiContext,
+  params?: RouteParams
+) {
   try {
-    const currentUser = await getCurrentUser();
-
-    if (!currentUser) {
-      return error("UNAUTHORIZED", "Please log in to view messages", 401);
+    const conversationId = params?.conversationId;
+    if (!conversationId) {
+      return error("INVALID_REQUEST", "Conversation ID is required", 400);
     }
 
-    const { conversationId } = await context.params;
     const { searchParams } = new URL(request.url);
-    const limit = parseInt(searchParams.get("limit") || "50");
+    const limit = Math.min(parseInt(searchParams.get("limit") || "50"), 100);
     const cursor = searchParams.get("cursor");
 
     const db = await getDB();
@@ -32,7 +40,7 @@ export async function GET(request: NextRequest, context: RouteContext) {
       .where(
         and(
           eq(conversationParticipants.conversationId, conversationId),
-          eq(conversationParticipants.userId, currentUser.id)
+          eq(conversationParticipants.userId, user.id)
         )
       )
       .limit(1);
@@ -82,7 +90,7 @@ export async function GET(request: NextRequest, context: RouteContext) {
       chronologicalItems.map((m) => ({
         ...m,
         createdAt: m.createdAt.toISOString(),
-        isOwn: m.sender.id === currentUser.id,
+        isOwn: m.sender.id === user.id,
       })),
       {
         cursor: hasMore ? items[0].createdAt.toISOString() : undefined,
@@ -90,21 +98,23 @@ export async function GET(request: NextRequest, context: RouteContext) {
       }
     );
   } catch (err) {
-    console.error("Get messages error:", err);
-    return error("INTERNAL_ERROR", "Failed to fetch messages", 500);
+    logError(requestId, "get_messages_error", err);
+    return serverError("Failed to fetch messages");
   }
 }
 
 // POST /api/v1/conversations/:conversationId/messages - Send a message
-export async function POST(request: NextRequest, context: RouteContext) {
+async function handleSendMessage(
+  request: NextRequest,
+  { user, requestId }: ApiContext,
+  params?: RouteParams
+) {
   try {
-    const currentUser = await getCurrentUser();
-
-    if (!currentUser) {
-      return error("UNAUTHORIZED", "Please log in to send messages", 401);
+    const conversationId = params?.conversationId;
+    if (!conversationId) {
+      return error("INVALID_REQUEST", "Conversation ID is required", 400);
     }
 
-    const { conversationId } = await context.params;
     const body = (await request.json()) as {
       content: string;
       mediaUrl?: string;
@@ -127,7 +137,7 @@ export async function POST(request: NextRequest, context: RouteContext) {
       .where(
         and(
           eq(conversationParticipants.conversationId, conversationId),
-          eq(conversationParticipants.userId, currentUser.id)
+          eq(conversationParticipants.userId, user.id)
         )
       )
       .limit(1);
@@ -146,7 +156,7 @@ export async function POST(request: NextRequest, context: RouteContext) {
     await db.insert(messages).values({
       id: messageId,
       conversationId,
-      senderId: currentUser.id,
+      senderId: user.id,
       content: body.content?.trim() || null,
       mediaUrl: body.mediaUrl || null,
     });
@@ -167,14 +177,17 @@ export async function POST(request: NextRequest, context: RouteContext) {
       ...message,
       createdAt: message.createdAt.toISOString(),
       sender: {
-        id: currentUser.id,
-        displayName: currentUser.displayName,
-        avatarUrl: currentUser.avatarUrl,
+        id: user.id,
+        displayName: user.displayName,
+        avatarUrl: user.avatarUrl,
       },
       isOwn: true,
     });
   } catch (err) {
-    console.error("Send message error:", err);
-    return error("INTERNAL_ERROR", "Failed to send message", 500);
+    logError(requestId, "send_message_error", err);
+    return serverError("Failed to send message");
   }
 }
+
+export const GET = withAuth<RouteParams>(handleGetMessages);
+export const POST = withAuth<RouteParams>(handleSendMessage);

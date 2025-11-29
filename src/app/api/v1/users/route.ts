@@ -1,55 +1,35 @@
 import { NextRequest } from "next/server";
 import { getDB } from "@/lib/cloudflare/d1";
 import { users } from "@/lib/db/schema";
-import { getCurrentUser, validateApiSession } from "@/lib/auth/session";
 import {
   success,
-  unauthorized,
-  validationError,
   serverError,
   searchSchema,
-  validateParams,
+  withAuth,
+  parseQuery,
+  logError,
+  ApiContext,
 } from "@/lib/api";
 import { like, or, sql } from "drizzle-orm";
 
 // GET /api/v1/users - Search users
-export async function GET(request: NextRequest) {
+async function handleSearchUsers(
+  request: NextRequest,
+  { requestId }: ApiContext
+) {
   try {
-    // Check authentication
-    let userId: string | null = null;
-    const currentUser = await getCurrentUser();
-
-    if (currentUser) {
-      userId = currentUser.id;
-    } else {
-      const authHeader = request.headers.get("Authorization");
-      const session = await validateApiSession(authHeader);
-      if (session) {
-        userId = session.userId;
-      }
-    }
-
-    if (!userId) {
-      return unauthorized();
-    }
-
     const { searchParams } = new URL(request.url);
-    const { data, errors: validationErrors } = validateParams(
-      searchParams,
-      searchSchema
-    );
-
-    if (validationErrors) {
-      return validationError("Invalid parameters", validationErrors);
+    const parsed = parseQuery(searchParams, searchSchema);
+    if (!parsed.success) {
+      return parsed.error;
     }
 
-    const { q, page, limit } = data;
+    const { q, page, limit } = parsed.data;
     const offset = (page - 1) * limit;
-
     const db = await getDB();
 
-    // Search by username or display name
-    const searchPattern = `%${q}%`;
+    // Search by username or display name (case-insensitive)
+    const searchPattern = `%${q.toLowerCase()}%`;
 
     const [searchResults, countResult] = await Promise.all([
       db
@@ -64,8 +44,8 @@ export async function GET(request: NextRequest) {
         .from(users)
         .where(
           or(
-            like(users.username, searchPattern),
-            like(users.displayName, searchPattern)
+            like(sql`LOWER(${users.username})`, searchPattern),
+            like(sql`LOWER(${users.displayName})`, searchPattern)
           )
         )
         .limit(limit)
@@ -75,8 +55,8 @@ export async function GET(request: NextRequest) {
         .from(users)
         .where(
           or(
-            like(users.username, searchPattern),
-            like(users.displayName, searchPattern)
+            like(sql`LOWER(${users.username})`, searchPattern),
+            like(sql`LOWER(${users.displayName})`, searchPattern)
           )
         ),
     ]);
@@ -90,7 +70,9 @@ export async function GET(request: NextRequest) {
       hasMore: offset + searchResults.length < total,
     });
   } catch (err) {
-    console.error("Search users error:", err);
+    logError(requestId, "search_users_error", err);
     return serverError("Failed to search users");
   }
 }
+
+export const GET = withAuth(handleSearchUsers);

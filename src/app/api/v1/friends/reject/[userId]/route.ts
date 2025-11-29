@@ -1,28 +1,31 @@
 import { NextRequest } from "next/server";
 import { getDB } from "@/lib/cloudflare/d1";
 import { friendships } from "@/lib/db/schema";
-import { getCurrentUser } from "@/lib/auth/session";
-import { success, error } from "@/lib/api/response";
+import {
+  success,
+  notFound,
+  serverError,
+  withAuth,
+  logError,
+  ApiContext,
+} from "@/lib/api";
 import { eq, and } from "drizzle-orm";
 
-interface RouteContext {
-  params: Promise<{ userId: string }>;
+interface RejectParams {
+  userId: string;
 }
 
 // POST /api/v1/friends/reject/:userId - Reject friend request
-export async function POST(_request: NextRequest, context: RouteContext) {
+async function handleRejectFriendRequest(
+  _request: NextRequest,
+  { user, requestId }: ApiContext,
+  params?: RejectParams
+) {
   try {
-    const currentUser = await getCurrentUser();
-
-    if (!currentUser) {
-      return error(
-        "UNAUTHORIZED",
-        "Please log in to reject friend requests",
-        401
-      );
+    const requesterId = params?.userId;
+    if (!requesterId) {
+      return notFound("Friend request");
     }
-
-    const { userId } = await context.params;
 
     const db = await getDB();
 
@@ -32,15 +35,15 @@ export async function POST(_request: NextRequest, context: RouteContext) {
       .from(friendships)
       .where(
         and(
-          eq(friendships.requesterId, userId),
-          eq(friendships.addresseeId, currentUser.id),
+          eq(friendships.requesterId, requesterId),
+          eq(friendships.addresseeId, user.id),
           eq(friendships.status, "pending")
         )
       )
       .limit(1);
 
     if (!friendship) {
-      return error("NOT_FOUND", "Friend request not found", 404);
+      return notFound("Friend request");
     }
 
     // Delete the friend request
@@ -48,7 +51,9 @@ export async function POST(_request: NextRequest, context: RouteContext) {
 
     return success({ message: "Friend request rejected" });
   } catch (err) {
-    console.error("Reject friend request error:", err);
-    return error("INTERNAL_ERROR", "Failed to reject friend request", 500);
+    logError(requestId, "reject_friend_request_error", err);
+    return serverError("Failed to reject friend request");
   }
 }
+
+export const POST = withAuth<RejectParams>(handleRejectFriendRequest);

@@ -1,55 +1,45 @@
 import { NextRequest } from "next/server";
 import { getDB } from "@/lib/cloudflare/d1";
 import { posts, comments, users, notifications } from "@/lib/db/schema";
-import { getCurrentUser, validateApiSession } from "@/lib/auth/session";
 import {
   success,
-  unauthorized,
   notFound,
-  validationError,
   serverError,
   createCommentSchema,
   cursorPaginationSchema,
-  validateBody,
-  validateParams,
+  withAuth,
+  withOptionalAuth,
+  parseBody,
+  parseQuery,
+  logError,
+  ApiContext,
+  OptionalApiContext,
 } from "@/lib/api";
 import { eq, and, desc, lt, sql } from "drizzle-orm";
 
-interface RouteParams {
-  params: Promise<{ postId: string }>;
+interface CommentParams {
+  postId: string;
 }
 
 // GET /api/v1/posts/[postId]/comments - Get comments for a post
-export async function GET(request: NextRequest, { params }: RouteParams) {
+async function handleGetComments(
+  request: NextRequest,
+  { user, requestId }: OptionalApiContext,
+  params?: CommentParams
+) {
   try {
-    const { postId } = await params;
-
-    // Check authentication (optional)
-    let userId: string | null = null;
-    const currentUser = await getCurrentUser();
-
-    if (currentUser) {
-      userId = currentUser.id;
-    } else {
-      const authHeader = request.headers.get("Authorization");
-      const session = await validateApiSession(authHeader);
-      if (session) {
-        userId = session.userId;
-      }
+    const postId = params?.postId;
+    if (!postId) {
+      return notFound("Post");
     }
 
     const { searchParams } = new URL(request.url);
-    const { data, errors: validationErrors } = validateParams(
-      searchParams,
-      cursorPaginationSchema
-    );
-
-    if (validationErrors) {
-      return validationError("Invalid parameters", validationErrors);
+    const parsed = parseQuery(searchParams, cursorPaginationSchema);
+    if (!parsed.success) {
+      return parsed.error;
     }
 
-    const { cursor, limit } = data;
-
+    const { cursor, limit } = parsed.data;
     const db = await getDB();
 
     // Check if post exists
@@ -65,7 +55,6 @@ export async function GET(request: NextRequest, { params }: RouteParams) {
 
     // Build query conditions
     const conditions = [eq(comments.postId, postId)];
-
     if (cursor) {
       conditions.push(lt(comments.createdAt, new Date(parseInt(cursor))));
     }
@@ -98,7 +87,7 @@ export async function GET(request: NextRequest, { params }: RouteParams) {
     // Add isOwnComment flag
     const commentsWithOwnership = resultComments.map((comment) => ({
       ...comment,
-      isOwnComment: userId === comment.author.id,
+      isOwnComment: user?.id === comment.author.id,
     }));
 
     const nextCursor = hasMore
@@ -111,46 +100,29 @@ export async function GET(request: NextRequest, { params }: RouteParams) {
       hasMore,
     });
   } catch (err) {
-    console.error("Get comments error:", err);
+    logError(requestId, "get_comments_error", err);
     return serverError("Failed to get comments");
   }
 }
 
 // POST /api/v1/posts/[postId]/comments - Create a comment
-export async function POST(request: NextRequest, { params }: RouteParams) {
+async function handleCreateComment(
+  request: NextRequest,
+  { user, requestId }: ApiContext,
+  params?: CommentParams
+) {
   try {
-    const { postId } = await params;
-
-    // Check authentication
-    let userId: string | null = null;
-    const currentUser = await getCurrentUser();
-
-    if (currentUser) {
-      userId = currentUser.id;
-    } else {
-      const authHeader = request.headers.get("Authorization");
-      const session = await validateApiSession(authHeader);
-      if (session) {
-        userId = session.userId;
-      }
+    const postId = params?.postId;
+    if (!postId) {
+      return notFound("Post");
     }
 
-    if (!userId) {
-      return unauthorized();
+    const parsed = await parseBody(request, createCommentSchema);
+    if (!parsed.success) {
+      return parsed.error;
     }
 
-    // Validate request body
-    const { data, errors: validationErrors } = await validateBody(
-      request,
-      createCommentSchema
-    );
-
-    if (validationErrors) {
-      return validationError("Invalid input", validationErrors);
-    }
-
-    const { content, parentId } = data;
-
+    const { content, parentId } = parsed.data;
     const db = await getDB();
 
     // Check if post exists
@@ -186,7 +158,7 @@ export async function POST(request: NextRequest, { params }: RouteParams) {
       .insert(comments)
       .values({
         postId,
-        userId,
+        userId: user.id,
         parentId,
         content,
       })
@@ -208,18 +180,18 @@ export async function POST(request: NextRequest, { params }: RouteParams) {
         isVerified: users.isVerified,
       })
       .from(users)
-      .where(eq(users.id, userId))
+      .where(eq(users.id, user.id))
       .limit(1);
 
     // Create notification for post owner (if not own post)
-    if (post.userId !== userId) {
+    if (post.userId !== user.id) {
       await db.insert(notifications).values({
         userId: post.userId,
         type: "comment",
-        actorId: userId,
+        actorId: user.id,
         targetType: "post",
         targetId: postId,
-        content: content.slice(0, 100), // Preview of comment
+        content: content.slice(0, 100),
       });
     }
 
@@ -237,7 +209,10 @@ export async function POST(request: NextRequest, { params }: RouteParams) {
       201
     );
   } catch (err) {
-    console.error("Create comment error:", err);
+    logError(requestId, "create_comment_error", err);
     return serverError("Failed to create comment");
   }
 }
+
+export const GET = withOptionalAuth<CommentParams>(handleGetComments);
+export const POST = withAuth<CommentParams>(handleCreateComment);

@@ -1,7 +1,13 @@
 import { NextRequest } from "next/server";
 import { uploadFile, getPublicUrl } from "@/lib/cloudflare/r2";
-import { getCurrentUser } from "@/lib/auth/session";
-import { success, error } from "@/lib/api/response";
+import {
+  success,
+  error,
+  serverError,
+  withAuth,
+  logError,
+  ApiContext,
+} from "@/lib/api";
 
 // Allowed file types and size limits
 const ALLOWED_IMAGE_TYPES = [
@@ -9,36 +15,48 @@ const ALLOWED_IMAGE_TYPES = [
   "image/png",
   "image/gif",
   "image/webp",
-];
-const ALLOWED_VIDEO_TYPES = ["video/mp4", "video/webm"];
+] as const;
+const ALLOWED_VIDEO_TYPES = ["video/mp4", "video/webm"] as const;
 const MAX_IMAGE_SIZE = 5 * 1024 * 1024; // 5MB
 const MAX_VIDEO_SIZE = 50 * 1024 * 1024; // 50MB
 
+const VALID_UPLOAD_TYPES = ["avatar", "cover", "post", "message"] as const;
+type UploadType = (typeof VALID_UPLOAD_TYPES)[number];
+
+function isValidUploadType(type: string): type is UploadType {
+  return VALID_UPLOAD_TYPES.includes(type as UploadType);
+}
+
 // POST /api/v1/upload - Upload a file
-export async function POST(request: NextRequest) {
+async function handleUpload(
+  request: NextRequest,
+  { user, requestId }: ApiContext
+) {
   try {
-    const currentUser = await getCurrentUser();
-
-    if (!currentUser) {
-      return error("UNAUTHORIZED", "Please log in to upload files", 401);
-    }
-
     const formData = await request.formData();
     const file = formData.get("file") as File | null;
-    const type = formData.get("type") as string | null; // avatar, cover, post, message
+    const type = formData.get("type") as string | null;
 
     if (!file) {
       return error("INVALID_REQUEST", "No file provided", 400);
     }
 
-    if (!type) {
-      return error("INVALID_REQUEST", "Upload type is required", 400);
+    if (!type || !isValidUploadType(type)) {
+      return error(
+        "INVALID_REQUEST",
+        "Upload type is required (avatar, cover, post, or message)",
+        400
+      );
     }
 
     const contentType = file.type;
     const fileSize = file.size;
-    const isImage = ALLOWED_IMAGE_TYPES.includes(contentType);
-    const isVideo = ALLOWED_VIDEO_TYPES.includes(contentType);
+    const isImage = ALLOWED_IMAGE_TYPES.includes(
+      contentType as (typeof ALLOWED_IMAGE_TYPES)[number]
+    );
+    const isVideo = ALLOWED_VIDEO_TYPES.includes(
+      contentType as (typeof ALLOWED_VIDEO_TYPES)[number]
+    );
 
     if (!isImage && !isVideo) {
       return error(
@@ -69,21 +87,20 @@ export async function POST(request: NextRequest) {
         : type === "message"
           ? "messages"
           : "posts";
-    const key = `${folder}/${currentUser.id}/${timestamp}-${randomId}.${extension}`;
+    const key = `${folder}/${user.id}/${timestamp}-${randomId}.${extension}`;
 
     // Upload to R2
     const arrayBuffer = await file.arrayBuffer();
     await uploadFile(key, arrayBuffer, {
       contentType,
       customMetadata: {
-        userId: currentUser.id,
+        userId: user.id,
         type,
         originalName: file.name,
       },
     });
 
     // Generate public URL
-    // In production, replace this with your actual R2 public URL or custom domain
     const publicUrl = getPublicUrl(key, process.env.PUBLIC_URL || "/media");
 
     return success({
@@ -93,7 +110,9 @@ export async function POST(request: NextRequest) {
       size: fileSize,
     });
   } catch (err) {
-    console.error("Upload error:", err);
-    return error("INTERNAL_ERROR", "Failed to upload file", 500);
+    logError(requestId, "upload_error", err);
+    return serverError("Failed to upload file");
   }
 }
+
+export const POST = withAuth(handleUpload);

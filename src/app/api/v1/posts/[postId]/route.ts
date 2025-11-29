@@ -1,40 +1,35 @@
 import { NextRequest } from "next/server";
 import { getDB } from "@/lib/cloudflare/d1";
 import { posts, users, likes } from "@/lib/db/schema";
-import { getCurrentUser, validateApiSession } from "@/lib/auth/session";
 import {
   success,
-  unauthorized,
   notFound,
   forbidden,
-  validationError,
   serverError,
   updatePostSchema,
-  validateBody,
+  withAuth,
+  withOptionalAuth,
+  parseBody,
+  logError,
+  ApiContext,
+  OptionalApiContext,
 } from "@/lib/api";
 import { eq, and } from "drizzle-orm";
 
-interface RouteParams {
-  params: Promise<{ postId: string }>;
+interface PostParams {
+  postId: string;
 }
 
 // GET /api/v1/posts/[postId] - Get single post
-export async function GET(request: NextRequest, { params }: RouteParams) {
+async function handleGetPost(
+  _request: NextRequest,
+  { user, requestId }: OptionalApiContext,
+  params?: PostParams
+) {
   try {
-    const { postId } = await params;
-
-    // Check authentication (optional)
-    let userId: string | null = null;
-    const currentUser = await getCurrentUser();
-
-    if (currentUser) {
-      userId = currentUser.id;
-    } else {
-      const authHeader = request.headers.get("Authorization");
-      const session = await validateApiSession(authHeader);
-      if (session) {
-        userId = session.userId;
-      }
+    const postId = params?.postId;
+    if (!postId) {
+      return notFound("Post");
     }
 
     const db = await getDB();
@@ -70,20 +65,19 @@ export async function GET(request: NextRequest, { params }: RouteParams) {
     }
 
     // Check visibility permissions
-    if (post.visibility !== "public" && post.userId !== userId) {
-      // TODO: Check if friends for "friends" visibility
+    if (post.visibility !== "public" && post.userId !== user?.id) {
       return forbidden();
     }
 
     // Check if current user has liked this post
     let isLiked = false;
-    if (userId) {
+    if (user) {
       const [like] = await db
         .select({ id: likes.id })
         .from(likes)
         .where(
           and(
-            eq(likes.userId, userId),
+            eq(likes.userId, user.id),
             eq(likes.targetType, "post"),
             eq(likes.targetId, postId)
           )
@@ -104,45 +98,29 @@ export async function GET(request: NextRequest, { params }: RouteParams) {
       updatedAt: post.updatedAt,
       author: post.author,
       isLiked,
-      isOwnPost: userId === post.userId,
+      isOwnPost: user?.id === post.userId,
     });
   } catch (err) {
-    console.error("Get post error:", err);
+    logError(requestId, "get_post_error", err);
     return serverError("Failed to get post");
   }
 }
 
 // PATCH /api/v1/posts/[postId] - Update post
-export async function PATCH(request: NextRequest, { params }: RouteParams) {
+async function handleUpdatePost(
+  request: NextRequest,
+  { user, requestId }: ApiContext,
+  params?: PostParams
+) {
   try {
-    const { postId } = await params;
-
-    // Check authentication
-    let userId: string | null = null;
-    const currentUser = await getCurrentUser();
-
-    if (currentUser) {
-      userId = currentUser.id;
-    } else {
-      const authHeader = request.headers.get("Authorization");
-      const session = await validateApiSession(authHeader);
-      if (session) {
-        userId = session.userId;
-      }
+    const postId = params?.postId;
+    if (!postId) {
+      return notFound("Post");
     }
 
-    if (!userId) {
-      return unauthorized();
-    }
-
-    // Validate request body
-    const { data, errors: validationErrors } = await validateBody(
-      request,
-      updatePostSchema
-    );
-
-    if (validationErrors) {
-      return validationError("Invalid input", validationErrors);
+    const parsed = await parseBody(request, updatePostSchema);
+    if (!parsed.success) {
+      return parsed.error;
     }
 
     const db = await getDB();
@@ -158,7 +136,7 @@ export async function PATCH(request: NextRequest, { params }: RouteParams) {
       return notFound("Post");
     }
 
-    if (existingPost.userId !== userId) {
+    if (existingPost.userId !== user.id) {
       return forbidden();
     }
 
@@ -166,7 +144,7 @@ export async function PATCH(request: NextRequest, { params }: RouteParams) {
     const [updatedPost] = await db
       .update(posts)
       .set({
-        ...data,
+        ...parsed.data,
         updatedAt: new Date(),
       })
       .where(eq(posts.id, postId))
@@ -182,7 +160,7 @@ export async function PATCH(request: NextRequest, { params }: RouteParams) {
         isVerified: users.isVerified,
       })
       .from(users)
-      .where(eq(users.id, userId))
+      .where(eq(users.id, user.id))
       .limit(1);
 
     return success({
@@ -199,32 +177,21 @@ export async function PATCH(request: NextRequest, { params }: RouteParams) {
       isOwnPost: true,
     });
   } catch (err) {
-    console.error("Update post error:", err);
+    logError(requestId, "update_post_error", err);
     return serverError("Failed to update post");
   }
 }
 
 // DELETE /api/v1/posts/[postId] - Delete post
-export async function DELETE(request: NextRequest, { params }: RouteParams) {
+async function handleDeletePost(
+  _request: NextRequest,
+  { user, requestId }: ApiContext,
+  params?: PostParams
+) {
   try {
-    const { postId } = await params;
-
-    // Check authentication
-    let userId: string | null = null;
-    const currentUser = await getCurrentUser();
-
-    if (currentUser) {
-      userId = currentUser.id;
-    } else {
-      const authHeader = request.headers.get("Authorization");
-      const session = await validateApiSession(authHeader);
-      if (session) {
-        userId = session.userId;
-      }
-    }
-
-    if (!userId) {
-      return unauthorized();
+    const postId = params?.postId;
+    if (!postId) {
+      return notFound("Post");
     }
 
     const db = await getDB();
@@ -240,7 +207,7 @@ export async function DELETE(request: NextRequest, { params }: RouteParams) {
       return notFound("Post");
     }
 
-    if (existingPost.userId !== userId) {
+    if (existingPost.userId !== user.id) {
       return forbidden();
     }
 
@@ -249,7 +216,11 @@ export async function DELETE(request: NextRequest, { params }: RouteParams) {
 
     return success({ message: "Post deleted successfully" });
   } catch (err) {
-    console.error("Delete post error:", err);
+    logError(requestId, "delete_post_error", err);
     return serverError("Failed to delete post");
   }
 }
+
+export const GET = withOptionalAuth<PostParams>(handleGetPost);
+export const PATCH = withAuth<PostParams>(handleUpdatePost);
+export const DELETE = withAuth<PostParams>(handleDeletePost);

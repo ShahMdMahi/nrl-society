@@ -6,28 +6,28 @@ import { createSession } from "@/lib/auth/session";
 import {
   success,
   error,
-  validationError,
   serverError,
   ErrorCodes,
   loginSchema,
-  validateBody,
+  parseBody,
+  logError,
+  logInfo,
 } from "@/lib/api";
 import { eq } from "drizzle-orm";
 
+const REQUEST_ID_PREFIX = "login";
+
 export async function POST(request: NextRequest) {
+  const requestId = `${REQUEST_ID_PREFIX}_${Date.now().toString(36)}`;
+
   try {
     // Validate request body
-    const { data, errors: validationErrors } = await validateBody(
-      request,
-      loginSchema
-    );
-
-    if (validationErrors) {
-      return validationError("Invalid input", validationErrors);
+    const parsed = await parseBody(request, loginSchema);
+    if (!parsed.success) {
+      return parsed.error;
     }
 
-    const { email, password } = data;
-
+    const { email, password } = parsed.data;
     const db = await getDB();
 
     // Find user by email
@@ -38,6 +38,7 @@ export async function POST(request: NextRequest) {
       .limit(1);
 
     if (!user) {
+      logInfo(requestId, "login_failed", { reason: "user_not_found", email });
       return error(
         ErrorCodes.INVALID_CREDENTIALS,
         "Invalid email or password",
@@ -47,8 +48,11 @@ export async function POST(request: NextRequest) {
 
     // Verify password
     const isValidPassword = await verifyPassword(password, user.passwordHash);
-
     if (!isValidPassword) {
+      logInfo(requestId, "login_failed", {
+        reason: "invalid_password",
+        userId: user.id,
+      });
       return error(
         ErrorCodes.INVALID_CREDENTIALS,
         "Invalid email or password",
@@ -59,6 +63,8 @@ export async function POST(request: NextRequest) {
     // Create session
     const sessionId = await createSession(user.id);
 
+    logInfo(requestId, "login_success", { userId: user.id });
+
     return success({
       user: {
         id: user.id,
@@ -68,10 +74,10 @@ export async function POST(request: NextRequest) {
         avatarUrl: user.avatarUrl,
         isVerified: user.isVerified,
       },
-      sessionId, // Include for mobile apps to store
+      sessionId,
     });
   } catch (err) {
-    console.error("Login error:", err);
+    logError(requestId, "login_error", err);
     return serverError("Failed to log in");
   }
 }

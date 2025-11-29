@@ -1,52 +1,33 @@
 import { NextRequest } from "next/server";
 import { getDB } from "@/lib/cloudflare/d1";
 import { posts, users, likes } from "@/lib/db/schema";
-import { getCurrentUser, validateApiSession } from "@/lib/auth/session";
 import {
   success,
-  unauthorized,
   validationError,
   serverError,
   createPostSchema,
   cursorPaginationSchema,
-  validateBody,
-  validateParams,
+  withAuth,
+  parseBody,
+  parseQuery,
+  logError,
+  ApiContext,
 } from "@/lib/api";
 import { eq, desc, lt, and, inArray, or, isNull } from "drizzle-orm";
 
 // GET /api/v1/posts - Get feed (paginated)
-export async function GET(request: NextRequest) {
+async function handleGetFeed(
+  request: NextRequest,
+  { user, requestId }: ApiContext
+) {
   try {
-    // Check authentication
-    let userId: string | null = null;
-    const currentUser = await getCurrentUser();
-
-    if (currentUser) {
-      userId = currentUser.id;
-    } else {
-      const authHeader = request.headers.get("Authorization");
-      const session = await validateApiSession(authHeader);
-      if (session) {
-        userId = session.userId;
-      }
-    }
-
-    if (!userId) {
-      return unauthorized();
-    }
-
     const { searchParams } = new URL(request.url);
-    const { data, errors: validationErrors } = validateParams(
-      searchParams,
-      cursorPaginationSchema
-    );
-
-    if (validationErrors) {
-      return validationError("Invalid parameters", validationErrors);
+    const parsed = parseQuery(searchParams, cursorPaginationSchema);
+    if (!parsed.success) {
+      return parsed.error;
     }
 
-    const { cursor, limit } = data;
-
+    const { cursor, limit } = parsed.data;
     const db = await getDB();
 
     // Build query conditions - include posts with visibility 'public' or NULL (default)
@@ -85,7 +66,7 @@ export async function GET(request: NextRequest) {
           : visibilityCondition
       )
       .orderBy(desc(posts.createdAt))
-      .limit(limit + 1); // Fetch one extra to check if there's more
+      .limit(limit + 1);
 
     const hasMore = feedPosts.length > limit;
     const resultPosts = hasMore ? feedPosts.slice(0, -1) : feedPosts;
@@ -99,7 +80,7 @@ export async function GET(request: NextRequest) {
             .from(likes)
             .where(
               and(
-                eq(likes.userId, userId),
+                eq(likes.userId, user.id),
                 eq(likes.targetType, "post"),
                 inArray(likes.targetId, postIds)
               )
@@ -125,48 +106,23 @@ export async function GET(request: NextRequest) {
       hasMore,
     });
   } catch (err) {
-    console.error("Get feed error:", err);
-    // Include error details in development
-    const errorMessage =
-      err instanceof Error ? err.message : "Failed to get feed";
-    const errorStack = err instanceof Error ? err.stack : undefined;
-    console.error("Error stack:", errorStack);
-    return serverError(errorMessage);
+    logError(requestId, "get_feed_error", err);
+    return serverError("Failed to get feed");
   }
 }
 
 // POST /api/v1/posts - Create a new post
-export async function POST(request: NextRequest) {
+async function handleCreatePost(
+  request: NextRequest,
+  { user, requestId }: ApiContext
+) {
   try {
-    // Check authentication
-    let userId: string | null = null;
-    const currentUser = await getCurrentUser();
-
-    if (currentUser) {
-      userId = currentUser.id;
-    } else {
-      const authHeader = request.headers.get("Authorization");
-      const session = await validateApiSession(authHeader);
-      if (session) {
-        userId = session.userId;
-      }
+    const parsed = await parseBody(request, createPostSchema);
+    if (!parsed.success) {
+      return parsed.error;
     }
 
-    if (!userId) {
-      return unauthorized();
-    }
-
-    // Validate request body
-    const { data, errors: validationErrors } = await validateBody(
-      request,
-      createPostSchema
-    );
-
-    if (validationErrors) {
-      return validationError("Invalid input", validationErrors);
-    }
-
-    const { content, mediaUrls, visibility } = data;
+    const { content, mediaUrls, visibility } = parsed.data;
 
     // Must have either content or media
     if (!content && (!mediaUrls || mediaUrls.length === 0)) {
@@ -179,7 +135,7 @@ export async function POST(request: NextRequest) {
     const [newPost] = await db
       .insert(posts)
       .values({
-        userId,
+        userId: user.id,
         content,
         mediaUrls: mediaUrls ? JSON.stringify(mediaUrls) : null,
         visibility,
@@ -196,7 +152,7 @@ export async function POST(request: NextRequest) {
         isVerified: users.isVerified,
       })
       .from(users)
-      .where(eq(users.id, userId))
+      .where(eq(users.id, user.id))
       .limit(1);
 
     return success(
@@ -216,7 +172,10 @@ export async function POST(request: NextRequest) {
       201
     );
   } catch (err) {
-    console.error("Create post error:", err);
+    logError(requestId, "create_post_error", err);
     return serverError("Failed to create post");
   }
 }
+
+export const GET = withAuth(handleGetFeed);
+export const POST = withAuth(handleCreatePost);

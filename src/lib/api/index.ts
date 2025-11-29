@@ -1,3 +1,4 @@
+// Response helpers
 export {
   success,
   error,
@@ -15,6 +16,7 @@ export type {
   ApiResponse,
 } from "./response";
 
+// Validation schemas
 export {
   registerSchema,
   loginSchema,
@@ -43,3 +45,16 @@ export type {
   CursorPaginationInput,
   SearchInput,
 } from "./validators";
+
+// Middleware and utilities
+export {
+  withAuth,
+  withOptionalAuth,
+  withRateLimit,
+  parseBody,
+  parseQuery,
+  logError,
+  logInfo,
+  checkRateLimit,
+} from "./middleware";
+export type { ApiContext, OptionalApiContext } from "./middleware";

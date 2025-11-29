@@ -1,42 +1,32 @@
 import { NextRequest } from "next/server";
 import { getDB } from "@/lib/cloudflare/d1";
 import { posts, likes, notifications } from "@/lib/db/schema";
-import { getCurrentUser, validateApiSession } from "@/lib/auth/session";
 import {
   success,
-  unauthorized,
   notFound,
   error,
   serverError,
   ErrorCodes,
+  withAuth,
+  logError,
+  ApiContext,
 } from "@/lib/api";
 import { eq, and, sql } from "drizzle-orm";
 
-interface RouteParams {
-  params: Promise<{ postId: string }>;
+interface LikeParams {
+  postId: string;
 }
 
 // POST /api/v1/posts/[postId]/like - Like a post
-export async function POST(request: NextRequest, { params }: RouteParams) {
+async function handleLikePost(
+  _request: NextRequest,
+  { user, requestId }: ApiContext,
+  params?: LikeParams
+) {
   try {
-    const { postId } = await params;
-
-    // Check authentication
-    let userId: string | null = null;
-    const currentUser = await getCurrentUser();
-
-    if (currentUser) {
-      userId = currentUser.id;
-    } else {
-      const authHeader = request.headers.get("Authorization");
-      const session = await validateApiSession(authHeader);
-      if (session) {
-        userId = session.userId;
-      }
-    }
-
-    if (!userId) {
-      return unauthorized();
+    const postId = params?.postId;
+    if (!postId) {
+      return notFound("Post");
     }
 
     const db = await getDB();
@@ -62,7 +52,7 @@ export async function POST(request: NextRequest, { params }: RouteParams) {
       .from(likes)
       .where(
         and(
-          eq(likes.userId, userId),
+          eq(likes.userId, user.id),
           eq(likes.targetType, "post"),
           eq(likes.targetId, postId)
         )
@@ -79,7 +69,7 @@ export async function POST(request: NextRequest, { params }: RouteParams) {
 
     // Create like
     await db.insert(likes).values({
-      userId,
+      userId: user.id,
       targetType: "post",
       targetId: postId,
     });
@@ -91,11 +81,11 @@ export async function POST(request: NextRequest, { params }: RouteParams) {
       .where(eq(posts.id, postId));
 
     // Create notification for post owner (if not own post)
-    if (post.userId !== userId) {
+    if (post.userId !== user.id) {
       await db.insert(notifications).values({
         userId: post.userId,
         type: "like",
-        actorId: userId,
+        actorId: user.id,
         targetType: "post",
         targetId: postId,
       });
@@ -106,32 +96,21 @@ export async function POST(request: NextRequest, { params }: RouteParams) {
       likesCount: (post.likesCount ?? 0) + 1,
     });
   } catch (err) {
-    console.error("Like post error:", err);
+    logError(requestId, "like_post_error", err);
     return serverError("Failed to like post");
   }
 }
 
 // DELETE /api/v1/posts/[postId]/like - Unlike a post
-export async function DELETE(request: NextRequest, { params }: RouteParams) {
+async function handleUnlikePost(
+  _request: NextRequest,
+  { user, requestId }: ApiContext,
+  params?: LikeParams
+) {
   try {
-    const { postId } = await params;
-
-    // Check authentication
-    let userId: string | null = null;
-    const currentUser = await getCurrentUser();
-
-    if (currentUser) {
-      userId = currentUser.id;
-    } else {
-      const authHeader = request.headers.get("Authorization");
-      const session = await validateApiSession(authHeader);
-      if (session) {
-        userId = session.userId;
-      }
-    }
-
-    if (!userId) {
-      return unauthorized();
+    const postId = params?.postId;
+    if (!postId) {
+      return notFound("Post");
     }
 
     const db = await getDB();
@@ -153,7 +132,7 @@ export async function DELETE(request: NextRequest, { params }: RouteParams) {
       .from(likes)
       .where(
         and(
-          eq(likes.userId, userId),
+          eq(likes.userId, user.id),
           eq(likes.targetType, "post"),
           eq(likes.targetId, postId)
         )
@@ -169,7 +148,7 @@ export async function DELETE(request: NextRequest, { params }: RouteParams) {
       .delete(likes)
       .where(
         and(
-          eq(likes.userId, userId),
+          eq(likes.userId, user.id),
           eq(likes.targetType, "post"),
           eq(likes.targetId, postId)
         )
@@ -186,7 +165,10 @@ export async function DELETE(request: NextRequest, { params }: RouteParams) {
       likesCount: Math.max(0, (post.likesCount ?? 0) - 1),
     });
   } catch (err) {
-    console.error("Unlike post error:", err);
+    logError(requestId, "unlike_post_error", err);
     return serverError("Failed to unlike post");
   }
 }
+
+export const POST = withAuth<LikeParams>(handleLikePost);
+export const DELETE = withAuth<LikeParams>(handleUnlikePost);

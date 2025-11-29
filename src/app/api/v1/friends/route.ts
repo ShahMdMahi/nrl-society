@@ -1,21 +1,24 @@
 import { NextRequest } from "next/server";
 import { getDB } from "@/lib/cloudflare/d1";
 import { friendships, users } from "@/lib/db/schema";
-import { getCurrentUser } from "@/lib/auth/session";
-import { success, error } from "@/lib/api/response";
+import {
+  success,
+  error,
+  serverError,
+  withAuth,
+  logError,
+  ApiContext,
+} from "@/lib/api";
 import { eq, or, and, desc } from "drizzle-orm";
 
 // GET /api/v1/friends - List friends or friend requests
-export async function GET(request: NextRequest) {
+async function handleGetFriends(
+  request: NextRequest,
+  { user, requestId }: ApiContext
+) {
   try {
-    const currentUser = await getCurrentUser();
-
-    if (!currentUser) {
-      return error("UNAUTHORIZED", "Please log in to view friends", 401);
-    }
-
     const { searchParams } = new URL(request.url);
-    const status = searchParams.get("status") || "accepted"; // accepted, pending, sent
+    const status = searchParams.get("status") || "accepted";
 
     const db = await getDB();
 
@@ -36,11 +39,11 @@ export async function GET(request: NextRequest) {
           users,
           or(
             and(
-              eq(friendships.requesterId, currentUser.id),
+              eq(friendships.requesterId, user.id),
               eq(users.id, friendships.addresseeId)
             ),
             and(
-              eq(friendships.addresseeId, currentUser.id),
+              eq(friendships.addresseeId, user.id),
               eq(users.id, friendships.requesterId)
             )
           )
@@ -48,8 +51,8 @@ export async function GET(request: NextRequest) {
         .where(
           and(
             or(
-              eq(friendships.requesterId, currentUser.id),
-              eq(friendships.addresseeId, currentUser.id)
+              eq(friendships.requesterId, user.id),
+              eq(friendships.addresseeId, user.id)
             ),
             eq(friendships.status, "accepted")
           )
@@ -73,7 +76,7 @@ export async function GET(request: NextRequest) {
         .innerJoin(users, eq(users.id, friendships.requesterId))
         .where(
           and(
-            eq(friendships.addresseeId, currentUser.id),
+            eq(friendships.addresseeId, user.id),
             eq(friendships.status, "pending")
           )
         )
@@ -96,7 +99,7 @@ export async function GET(request: NextRequest) {
         .innerJoin(users, eq(users.id, friendships.addresseeId))
         .where(
           and(
-            eq(friendships.requesterId, currentUser.id),
+            eq(friendships.requesterId, user.id),
             eq(friendships.status, "pending")
           )
         )
@@ -107,7 +110,9 @@ export async function GET(request: NextRequest) {
 
     return error("INVALID_STATUS", "Invalid status parameter", 400);
   } catch (err) {
-    console.error("Get friends error:", err);
-    return error("INTERNAL_ERROR", "Failed to fetch friends", 500);
+    logError(requestId, "get_friends_error", err);
+    return serverError("Failed to fetch friends");
   }
 }
+
+export const GET = withAuth(handleGetFriends);

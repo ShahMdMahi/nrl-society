@@ -1,28 +1,31 @@
 import { NextRequest } from "next/server";
 import { getDB } from "@/lib/cloudflare/d1";
 import { notifications, users } from "@/lib/db/schema";
-import { getCurrentUser } from "@/lib/auth/session";
-import { success, error } from "@/lib/api/response";
+import {
+  success,
+  error,
+  serverError,
+  withAuth,
+  logError,
+  ApiContext,
+} from "@/lib/api";
 import { eq, desc, and, sql } from "drizzle-orm";
 
 // GET /api/v1/notifications - Get user notifications
-export async function GET(request: NextRequest) {
+async function handleGetNotifications(
+  request: NextRequest,
+  { user, requestId }: ApiContext
+) {
   try {
-    const currentUser = await getCurrentUser();
-
-    if (!currentUser) {
-      return error("UNAUTHORIZED", "Please log in to view notifications", 401);
-    }
-
     const { searchParams } = new URL(request.url);
-    const limit = parseInt(searchParams.get("limit") || "20");
+    const limit = Math.min(parseInt(searchParams.get("limit") || "20"), 100);
     const cursor = searchParams.get("cursor");
     const unreadOnly = searchParams.get("unread") === "true";
 
     const db = await getDB();
 
     // Build conditions
-    const conditions = [eq(notifications.userId, currentUser.id)];
+    const conditions = [eq(notifications.userId, user.id)];
     if (unreadOnly) {
       conditions.push(eq(notifications.isRead, false));
     }
@@ -61,10 +64,7 @@ export async function GET(request: NextRequest) {
       .select({ count: sql<number>`count(*)` })
       .from(notifications)
       .where(
-        and(
-          eq(notifications.userId, currentUser.id),
-          eq(notifications.isRead, false)
-        )
+        and(eq(notifications.userId, user.id), eq(notifications.isRead, false))
       );
 
     return success(
@@ -81,24 +81,17 @@ export async function GET(request: NextRequest) {
       }
     );
   } catch (err) {
-    console.error("Get notifications error:", err);
-    return error("INTERNAL_ERROR", "Failed to fetch notifications", 500);
+    logError(requestId, "get_notifications_error", err);
+    return serverError("Failed to fetch notifications");
   }
 }
 
 // PUT /api/v1/notifications - Mark notifications as read
-export async function PUT(request: NextRequest) {
+async function handleMarkNotificationsRead(
+  request: NextRequest,
+  { user, requestId }: ApiContext
+) {
   try {
-    const currentUser = await getCurrentUser();
-
-    if (!currentUser) {
-      return error(
-        "UNAUTHORIZED",
-        "Please log in to manage notifications",
-        401
-      );
-    }
-
     const body = (await request.json()) as { ids?: string[]; all?: boolean };
     const db = await getDB();
 
@@ -109,7 +102,7 @@ export async function PUT(request: NextRequest) {
         .set({ isRead: true })
         .where(
           and(
-            eq(notifications.userId, currentUser.id),
+            eq(notifications.userId, user.id),
             eq(notifications.isRead, false)
           )
         );
@@ -124,10 +117,7 @@ export async function PUT(request: NextRequest) {
           .update(notifications)
           .set({ isRead: true })
           .where(
-            and(
-              eq(notifications.id, id),
-              eq(notifications.userId, currentUser.id)
-            )
+            and(eq(notifications.id, id), eq(notifications.userId, user.id))
           );
       }
 
@@ -140,24 +130,17 @@ export async function PUT(request: NextRequest) {
       400
     );
   } catch (err) {
-    console.error("Mark notifications read error:", err);
-    return error("INTERNAL_ERROR", "Failed to mark notifications as read", 500);
+    logError(requestId, "mark_notifications_read_error", err);
+    return serverError("Failed to mark notifications as read");
   }
 }
 
 // DELETE /api/v1/notifications - Delete notifications
-export async function DELETE(request: NextRequest) {
+async function handleDeleteNotifications(
+  request: NextRequest,
+  { user, requestId }: ApiContext
+) {
   try {
-    const currentUser = await getCurrentUser();
-
-    if (!currentUser) {
-      return error(
-        "UNAUTHORIZED",
-        "Please log in to manage notifications",
-        401
-      );
-    }
-
     const { searchParams } = new URL(request.url);
     const id = searchParams.get("id");
     const all = searchParams.get("all") === "true";
@@ -166,9 +149,7 @@ export async function DELETE(request: NextRequest) {
 
     if (all) {
       // Delete all notifications for user
-      await db
-        .delete(notifications)
-        .where(eq(notifications.userId, currentUser.id));
+      await db.delete(notifications).where(eq(notifications.userId, user.id));
 
       return success({ message: "All notifications deleted" });
     }
@@ -178,10 +159,7 @@ export async function DELETE(request: NextRequest) {
       await db
         .delete(notifications)
         .where(
-          and(
-            eq(notifications.id, id),
-            eq(notifications.userId, currentUser.id)
-          )
+          and(eq(notifications.id, id), eq(notifications.userId, user.id))
         );
 
       return success({ message: "Notification deleted" });
@@ -193,7 +171,11 @@ export async function DELETE(request: NextRequest) {
       400
     );
   } catch (err) {
-    console.error("Delete notifications error:", err);
-    return error("INTERNAL_ERROR", "Failed to delete notifications", 500);
+    logError(requestId, "delete_notifications_error", err);
+    return serverError("Failed to delete notifications");
   }
 }
+
+export const GET = withAuth(handleGetNotifications);
+export const PUT = withAuth(handleMarkNotificationsRead);
+export const DELETE = withAuth(handleDeleteNotifications);

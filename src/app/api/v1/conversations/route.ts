@@ -6,21 +6,25 @@ import {
   messages,
   users,
 } from "@/lib/db/schema";
-import { getCurrentUser } from "@/lib/auth/session";
-import { success, error } from "@/lib/api/response";
+import {
+  success,
+  error,
+  notFound,
+  serverError,
+  withAuth,
+  logError,
+  ApiContext,
+} from "@/lib/api";
 import { eq, desc, and, sql, inArray } from "drizzle-orm";
 
 // GET /api/v1/conversations - List user's conversations
-export async function GET(request: NextRequest) {
+async function handleGetConversations(
+  request: NextRequest,
+  { user, requestId }: ApiContext
+) {
   try {
-    const currentUser = await getCurrentUser();
-
-    if (!currentUser) {
-      return error("UNAUTHORIZED", "Please log in to view conversations", 401);
-    }
-
     const { searchParams } = new URL(request.url);
-    const limit = parseInt(searchParams.get("limit") || "20");
+    const limit = Math.min(parseInt(searchParams.get("limit") || "20"), 100);
     const cursor = searchParams.get("cursor");
 
     const db = await getDB();
@@ -29,7 +33,7 @@ export async function GET(request: NextRequest) {
     const userConversations = await db
       .select({ conversationId: conversationParticipants.conversationId })
       .from(conversationParticipants)
-      .where(eq(conversationParticipants.userId, currentUser.id));
+      .where(eq(conversationParticipants.userId, user.id));
 
     const conversationIds = userConversations.map((c) => c.conversationId);
 
@@ -89,7 +93,7 @@ export async function GET(request: NextRequest) {
           ...conv,
           isGroup: conv.type === "group",
           createdAt: conv.createdAt.toISOString(),
-          participants: participants.filter((p) => p.userId !== currentUser.id),
+          participants: participants.filter((p) => p.userId !== user.id),
           lastMessage: lastMessage
             ? {
                 ...lastMessage,
@@ -107,24 +111,17 @@ export async function GET(request: NextRequest) {
       hasMore,
     });
   } catch (err) {
-    console.error("Get conversations error:", err);
-    return error("INTERNAL_ERROR", "Failed to fetch conversations", 500);
+    logError(requestId, "get_conversations_error", err);
+    return serverError("Failed to fetch conversations");
   }
 }
 
 // POST /api/v1/conversations - Create a new conversation
-export async function POST(request: NextRequest) {
+async function handleCreateConversation(
+  request: NextRequest,
+  { user, requestId }: ApiContext
+) {
   try {
-    const currentUser = await getCurrentUser();
-
-    if (!currentUser) {
-      return error(
-        "UNAUTHORIZED",
-        "Please log in to create conversations",
-        401
-      );
-    }
-
     const body = (await request.json()) as {
       participantIds: string[];
       name?: string;
@@ -141,7 +138,7 @@ export async function POST(request: NextRequest) {
 
     // Remove duplicates and current user from participants
     const uniqueParticipants = [...new Set(body.participantIds)].filter(
-      (id) => id !== currentUser.id
+      (id) => id !== user.id
     );
 
     if (uniqueParticipants.length === 0) {
@@ -161,7 +158,7 @@ export async function POST(request: NextRequest) {
       .where(inArray(users.id, uniqueParticipants));
 
     if (existingUsers.length !== uniqueParticipants.length) {
-      return error("NOT_FOUND", "One or more participants not found", 404);
+      return notFound("One or more participants");
     }
 
     // For 1-on-1 conversations, check if one already exists
@@ -178,7 +175,7 @@ export async function POST(request: NextRequest) {
         )
         .where(
           inArray(conversationParticipants.userId, [
-            currentUser.id,
+            user.id,
             uniqueParticipants[0],
           ])
         )
@@ -204,7 +201,7 @@ export async function POST(request: NextRequest) {
     });
 
     // Add all participants including current user
-    const allParticipants = [currentUser.id, ...uniqueParticipants];
+    const allParticipants = [user.id, ...uniqueParticipants];
     for (const participantId of allParticipants) {
       await db.insert(conversationParticipants).values({
         conversationId,
@@ -217,7 +214,10 @@ export async function POST(request: NextRequest) {
       existing: false,
     });
   } catch (err) {
-    console.error("Create conversation error:", err);
-    return error("INTERNAL_ERROR", "Failed to create conversation", 500);
+    logError(requestId, "create_conversation_error", err);
+    return serverError("Failed to create conversation");
   }
 }
+
+export const GET = withAuth(handleGetConversations);
+export const POST = withAuth(handleCreateConversation);

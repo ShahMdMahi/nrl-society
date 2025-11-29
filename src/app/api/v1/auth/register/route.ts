@@ -6,28 +6,28 @@ import { createSession } from "@/lib/auth/session";
 import {
   success,
   error,
-  validationError,
   serverError,
   ErrorCodes,
   registerSchema,
-  validateBody,
+  parseBody,
+  logError,
+  logInfo,
 } from "@/lib/api";
 import { eq, or } from "drizzle-orm";
 
+const REQUEST_ID_PREFIX = "register";
+
 export async function POST(request: NextRequest) {
+  const requestId = `${REQUEST_ID_PREFIX}_${Date.now().toString(36)}`;
+
   try {
     // Validate request body
-    const { data, errors: validationErrors } = await validateBody(
-      request,
-      registerSchema
-    );
-
-    if (validationErrors) {
-      return validationError("Invalid input", validationErrors);
+    const parsed = await parseBody(request, registerSchema);
+    if (!parsed.success) {
+      return parsed.error;
     }
 
-    const { email, username, password, displayName } = data;
-
+    const { email, username, password, displayName } = parsed.data;
     const db = await getDB();
 
     // Check if email or username already exists
@@ -40,6 +40,10 @@ export async function POST(request: NextRequest) {
     if (existingUser.length > 0) {
       const existing = existingUser[0];
       if (existing.email === email) {
+        logInfo(requestId, "register_failed", {
+          reason: "email_exists",
+          email,
+        });
         return error(
           ErrorCodes.EMAIL_EXISTS,
           "An account with this email already exists",
@@ -47,6 +51,10 @@ export async function POST(request: NextRequest) {
         );
       }
       if (existing.username === username) {
+        logInfo(requestId, "register_failed", {
+          reason: "username_exists",
+          username,
+        });
         return error(
           ErrorCodes.USERNAME_EXISTS,
           "This username is already taken",
@@ -80,6 +88,8 @@ export async function POST(request: NextRequest) {
     // Create session
     const sessionId = await createSession(newUser.id);
 
+    logInfo(requestId, "register_success", { userId: newUser.id });
+
     return success(
       {
         user: {
@@ -90,13 +100,13 @@ export async function POST(request: NextRequest) {
           avatarUrl: newUser.avatarUrl,
           isVerified: newUser.isVerified,
         },
-        sessionId, // Include for mobile apps to store
+        sessionId,
       },
       undefined,
       201
     );
   } catch (err) {
-    console.error("Registration error:", err);
+    logError(requestId, "register_error", err);
     return serverError("Failed to create account");
   }
 }

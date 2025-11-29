@@ -1,30 +1,34 @@
 import { NextRequest } from "next/server";
 import { getDB } from "@/lib/cloudflare/d1";
 import { friendships, users, notifications } from "@/lib/db/schema";
-import { getCurrentUser } from "@/lib/auth/session";
-import { success, error } from "@/lib/api/response";
+import {
+  success,
+  error,
+  notFound,
+  serverError,
+  withAuth,
+  logError,
+  ApiContext,
+} from "@/lib/api";
 import { eq, or, and } from "drizzle-orm";
 
-interface RouteContext {
-  params: Promise<{ userId: string }>;
+interface FriendRequestParams {
+  userId: string;
 }
 
 // POST /api/v1/friends/request/:userId - Send friend request
-export async function POST(_request: NextRequest, context: RouteContext) {
+async function handleSendFriendRequest(
+  _request: NextRequest,
+  { user, requestId }: ApiContext,
+  params?: FriendRequestParams
+) {
   try {
-    const currentUser = await getCurrentUser();
-
-    if (!currentUser) {
-      return error(
-        "UNAUTHORIZED",
-        "Please log in to send friend requests",
-        401
-      );
+    const targetUserId = params?.userId;
+    if (!targetUserId) {
+      return notFound("User");
     }
 
-    const { userId } = await context.params;
-
-    if (userId === currentUser.id) {
+    if (targetUserId === user.id) {
       return error(
         "INVALID_REQUEST",
         "Cannot send friend request to yourself",
@@ -38,11 +42,11 @@ export async function POST(_request: NextRequest, context: RouteContext) {
     const [targetUser] = await db
       .select({ id: users.id, displayName: users.displayName })
       .from(users)
-      .where(eq(users.id, userId))
+      .where(eq(users.id, targetUserId))
       .limit(1);
 
     if (!targetUser) {
-      return error("NOT_FOUND", "User not found", 404);
+      return notFound("User");
     }
 
     // Check if friendship already exists
@@ -52,12 +56,12 @@ export async function POST(_request: NextRequest, context: RouteContext) {
       .where(
         or(
           and(
-            eq(friendships.requesterId, currentUser.id),
-            eq(friendships.addresseeId, userId)
+            eq(friendships.requesterId, user.id),
+            eq(friendships.addresseeId, targetUserId)
           ),
           and(
-            eq(friendships.requesterId, userId),
-            eq(friendships.addresseeId, currentUser.id)
+            eq(friendships.requesterId, targetUserId),
+            eq(friendships.addresseeId, user.id)
           )
         )
       )
@@ -73,7 +77,7 @@ export async function POST(_request: NextRequest, context: RouteContext) {
         );
       }
       if (friendship.status === "pending") {
-        if (friendship.requesterId === currentUser.id) {
+        if (friendship.requesterId === user.id) {
           return error("REQUEST_PENDING", "Friend request already sent", 400);
         } else {
           // They sent us a request, so accept it instead
@@ -96,37 +100,38 @@ export async function POST(_request: NextRequest, context: RouteContext) {
 
     await db.insert(friendships).values({
       id: friendshipId,
-      requesterId: currentUser.id,
-      addresseeId: userId,
+      requesterId: user.id,
+      addresseeId: targetUserId,
       status: "pending",
     });
 
     // Create notification for the recipient
     await db.insert(notifications).values({
       id: notificationId,
-      userId: userId,
+      userId: targetUserId,
       type: "friend_request",
-      actorId: currentUser.id,
-      content: `${currentUser.displayName} sent you a friend request`,
+      actorId: user.id,
+      content: `sent you a friend request`,
     });
 
     return success({ message: "Friend request sent", friendshipId });
   } catch (err) {
-    console.error("Send friend request error:", err);
-    return error("INTERNAL_ERROR", "Failed to send friend request", 500);
+    logError(requestId, "send_friend_request_error", err);
+    return serverError("Failed to send friend request");
   }
 }
 
 // DELETE /api/v1/friends/request/:userId - Cancel friend request or unfriend
-export async function DELETE(_request: NextRequest, context: RouteContext) {
+async function handleDeleteFriendship(
+  _request: NextRequest,
+  { user, requestId }: ApiContext,
+  params?: FriendRequestParams
+) {
   try {
-    const currentUser = await getCurrentUser();
-
-    if (!currentUser) {
-      return error("UNAUTHORIZED", "Please log in to manage friendships", 401);
+    const targetUserId = params?.userId;
+    if (!targetUserId) {
+      return notFound("User");
     }
-
-    const { userId } = await context.params;
 
     const db = await getDB();
 
@@ -137,19 +142,19 @@ export async function DELETE(_request: NextRequest, context: RouteContext) {
       .where(
         or(
           and(
-            eq(friendships.requesterId, currentUser.id),
-            eq(friendships.addresseeId, userId)
+            eq(friendships.requesterId, user.id),
+            eq(friendships.addresseeId, targetUserId)
           ),
           and(
-            eq(friendships.requesterId, userId),
-            eq(friendships.addresseeId, currentUser.id)
+            eq(friendships.requesterId, targetUserId),
+            eq(friendships.addresseeId, user.id)
           )
         )
       )
       .limit(1);
 
     if (!friendship) {
-      return error("NOT_FOUND", "Friendship not found", 404);
+      return notFound("Friendship");
     }
 
     // Delete the friendship
@@ -157,7 +162,10 @@ export async function DELETE(_request: NextRequest, context: RouteContext) {
 
     return success({ message: "Friendship removed" });
   } catch (err) {
-    console.error("Delete friendship error:", err);
-    return error("INTERNAL_ERROR", "Failed to remove friendship", 500);
+    logError(requestId, "delete_friendship_error", err);
+    return serverError("Failed to remove friendship");
   }
 }
+
+export const POST = withAuth<FriendRequestParams>(handleSendFriendRequest);
+export const DELETE = withAuth<FriendRequestParams>(handleDeleteFriendship);
