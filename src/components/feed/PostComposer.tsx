@@ -7,10 +7,7 @@ import { Textarea } from "@/components/ui/textarea";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Card, CardContent } from "@/components/ui/card";
 import { ImageIcon, Video, Smile, Loader2, X } from "lucide-react";
-import {
-  compressImage,
-  formatFileSize,
-} from "@/lib/utils/image-compression";
+import { compressImage, formatFileSize } from "@/lib/utils/image-compression";
 import {
   MentionDropdown,
   useMention,

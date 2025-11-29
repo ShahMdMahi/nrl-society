@@ -183,7 +183,8 @@ export function useMention({ inputRef, value, onChange }: UseMentionOptions) {
     }
 
     // Check if @ is at start or preceded by whitespace
-    const charBefore = lastAtIndex > 0 ? textBeforeCursor[lastAtIndex - 1] : " ";
+    const charBefore =
+      lastAtIndex > 0 ? textBeforeCursor[lastAtIndex - 1] : " ";
     if (!/\s/.test(charBefore) && lastAtIndex !== 0) {
       setShowDropdown(false);
       return;

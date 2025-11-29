@@ -165,12 +165,7 @@ async function handleCreatePost(
       const mentionedUsers = await db
         .select({ id: users.id, username: users.username })
         .from(users)
-        .where(
-          inArray(
-            users.username,
-            mentionedUsernames
-          )
-        );
+        .where(inArray(users.username, mentionedUsernames));
 
       // Create notifications for mentioned users (except self)
       const mentionNotifications = mentionedUsers
