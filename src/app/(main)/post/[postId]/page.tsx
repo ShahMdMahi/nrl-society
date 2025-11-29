@@ -3,7 +3,7 @@
 import { useState, useEffect, useCallback, use } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
-import { formatDistanceToNow } from "date-fns";
+import { formatRelativeTime } from "@/lib/utils/date";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Button } from "@/components/ui/button";
 import {
@@ -33,8 +33,15 @@ import {
   Loader2,
   Send,
 } from "lucide-react";
+import dynamic from "next/dynamic";
 import { cn } from "@/lib/utils";
-import { MediaGallery } from "@/components/shared/MediaGallery";
+
+// Dynamic import for MediaGallery - only loaded when posts have media
+const MediaGallery = dynamic(
+  () =>
+    import("@/components/shared/MediaGallery").then((mod) => mod.MediaGallery),
+  { ssr: true }
+);
 
 interface PostData {
   id: string;
@@ -377,7 +384,7 @@ export default function PostPage({ params }: PostPageProps) {
     );
   }
 
-  const timeAgo = formatDistanceToNow(new Date(post.createdAt), {
+  const timeAgo = formatRelativeTime(new Date(post.createdAt), {
     addSuffix: true,
   });
 
@@ -571,7 +578,7 @@ export default function PostPage({ params }: PostPageProps) {
                           )}
                           <span className="text-muted-foreground text-xs">
                             ·{" "}
-                            {formatDistanceToNow(new Date(comment.createdAt), {
+                            {formatRelativeTime(new Date(comment.createdAt), {
                               addSuffix: true,
                             })}
                           </span>

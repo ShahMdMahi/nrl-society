@@ -1,4 +1,9 @@
 import type { NextConfig } from "next";
+import bundleAnalyzer from "@next/bundle-analyzer";
+
+const withBundleAnalyzer = bundleAnalyzer({
+  enabled: process.env.ANALYZE === "true",
+});
 
 const nextConfig: NextConfig = {
   // Optimize for Cloudflare Workers bundle size
@@ -6,7 +11,9 @@ const nextConfig: NextConfig = {
     // Reduce bundle size by not including unnecessary polyfills
     optimizePackageImports: [
       "lucide-react",
-      "date-fns",
+      "react-hook-form",
+      "zod",
+      "@hookform/resolvers",
       "@radix-ui/react-alert-dialog",
       "@radix-ui/react-avatar",
       "@radix-ui/react-dialog",
@@ -29,4 +36,4 @@ const nextConfig: NextConfig = {
   productionBrowserSourceMaps: false,
 };
 
-export default nextConfig;
+export default withBundleAnalyzer(nextConfig);

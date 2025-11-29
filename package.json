@@ -13,6 +13,7 @@
     "build:worker": "opennextjs-cloudflare build",
     "preview": "opennextjs-cloudflare preview",
     "deploy": "opennextjs-cloudflare deploy",
+    "analyze": "ANALYZE=true next build",
     "cf-typegen": "wrangler types",
     "db:migrate": "wrangler d1 migrations apply nrl-society-db",
     "db:migrate:local": "wrangler d1 migrations apply nrl-society-db --local",
@@ -37,7 +38,6 @@
     "class-variance-authority": "^0.7.1",
     "clsx": "^2.1.1",
     "cmdk": "^1.1.1",
-    "date-fns": "^4.1.0",
     "drizzle-orm": "^0.44.7",
     "lucide-react": "^0.555.0",
     "next": "16.0.5",
@@ -54,6 +54,7 @@
   },
   "devDependencies": {
     "@cloudflare/workers-types": "^4.20251128.0",
+    "@next/bundle-analyzer": "^16.0.5",
     "@tailwindcss/postcss": "^4",
     "@types/bcryptjs": "^3.0.0",
     "@types/node": "^20",

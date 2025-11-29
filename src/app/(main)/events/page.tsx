@@ -2,12 +2,12 @@
 
 import { useState, useEffect, useCallback } from "react";
 import {
-  formatDistanceToNow,
-  format,
+  formatRelativeTime,
+  formatDate,
   isAfter,
   isBefore,
   parseISO,
-} from "date-fns";
+} from "@/lib/utils/date";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -515,7 +515,7 @@ export default function EventsPage() {
                   <div className="flex items-center gap-2">
                     <Clock className="h-4 w-4" />
                     <span>
-                      {format(
+                      {formatDate(
                         parseISO(event.startDate),
                         "MMM d, yyyy 'at' h:mm a"
                       )}

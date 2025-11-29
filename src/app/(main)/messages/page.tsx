@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useEffect, useCallback, useRef } from "react";
-import { formatDistanceToNow } from "date-fns";
+import { formatRelativeTime } from "@/lib/utils/date";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -368,7 +368,7 @@ export default function MessagesPage() {
                     </div>
                     {conv.lastMessage && (
                       <span className="text-muted-foreground text-xs">
-                        {formatDistanceToNow(
+                        {formatRelativeTime(
                           new Date(conv.lastMessage.createdAt),
                           {
                             addSuffix: false,
@@ -491,7 +491,7 @@ export default function MessagesPage() {
                                 : "text-muted-foreground"
                             )}
                           >
-                            {formatDistanceToNow(new Date(message.createdAt), {
+                            {formatRelativeTime(new Date(message.createdAt), {
                               addSuffix: true,
                             })}
                           </p>

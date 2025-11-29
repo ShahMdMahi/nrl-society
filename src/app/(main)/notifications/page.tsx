@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useEffect, useCallback, useRef } from "react";
-import { formatDistanceToNow } from "date-fns";
+import { formatRelativeTime } from "@/lib/utils/date";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -242,7 +242,7 @@ export default function NotificationsPage() {
                       {notification.content}
                     </p>
                     <p className="text-muted-foreground text-xs">
-                      {formatDistanceToNow(new Date(notification.createdAt), {
+                      {formatRelativeTime(new Date(notification.createdAt), {
                         addSuffix: true,
                       })}
                     </p>

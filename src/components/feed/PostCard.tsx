@@ -2,7 +2,8 @@
 
 import { useState, useMemo } from "react";
 import Link from "next/link";
-import { formatDistanceToNow } from "date-fns";
+import dynamic from "next/dynamic";
+import { formatRelativeTime } from "@/lib/utils/date";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Button } from "@/components/ui/button";
 import {
@@ -28,7 +29,13 @@ import {
   BadgeCheck,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
-import { MediaGallery } from "@/components/shared/MediaGallery";
+
+// Dynamic import for MediaGallery - only loaded when posts have media
+const MediaGallery = dynamic(
+  () =>
+    import("@/components/shared/MediaGallery").then((mod) => mod.MediaGallery),
+  { ssr: true }
+);
 
 /**
  * Parse content and render @mentions as clickable links
@@ -280,7 +287,7 @@ export function PostCard({ post, onDelete }: PostCardProps) {
     }
   };
 
-  const timeAgo = formatDistanceToNow(new Date(post.createdAt), {
+  const timeAgo = formatRelativeTime(new Date(post.createdAt), {
     addSuffix: true,
   });
 

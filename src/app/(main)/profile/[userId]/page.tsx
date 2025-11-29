@@ -19,7 +19,7 @@ import {
   ImageIcon,
 } from "lucide-react";
 import { eq, sql, or, and, desc, inArray } from "drizzle-orm";
-import { format } from "date-fns";
+import { formatDate } from "@/lib/utils/date";
 import { PostCard, type PostData } from "@/components/feed/PostCard";
 import ProfileActions from "./ProfileActions";
 
@@ -301,7 +301,7 @@ export default async function ProfilePage({ params }: ProfilePageProps) {
         <div className="text-muted-foreground mt-4 flex flex-wrap gap-4 text-sm">
           <div className="flex items-center gap-1">
             <Calendar className="h-4 w-4" />
-            <span>Joined {format(user.createdAt, "MMMM yyyy")}</span>
+            <span>Joined {formatDate(user.createdAt, "MMMM yyyy")}</span>
           </div>
         </div>
 
