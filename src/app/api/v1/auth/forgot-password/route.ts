@@ -1,7 +1,7 @@
 import { NextRequest } from "next/server";
 import { getDB } from "@/lib/cloudflare/d1";
 import { users, passwordResetTokens } from "@/lib/db/schema";
-import { successResponse, errorResponse } from "@/lib/api/response";
+import { success, error } from "@/lib/api/response";
 import {
   sendEmail,
   generateToken,
@@ -14,11 +14,11 @@ export const runtime = "edge";
 
 export async function POST(request: NextRequest) {
   try {
-    const body = await request.json();
+    const body = (await request.json()) as { email?: string };
     const { email } = body;
 
     if (!email || typeof email !== "string") {
-      return errorResponse("Email is required", "VALIDATION_ERROR", 400);
+      return error("VALIDATION_ERROR", "Email is required", 400);
     }
 
     const normalizedEmail = email.toLowerCase().trim();
@@ -54,7 +54,7 @@ export async function POST(request: NextRequest) {
 
       if (recentToken) {
         // Don't reveal that a token was recently sent
-        return successResponse({
+        return success({
           message:
             "If an account exists with this email, you will receive a password reset link.",
         });
@@ -93,16 +93,12 @@ export async function POST(request: NextRequest) {
     }
 
     // Always return success to prevent email enumeration
-    return successResponse({
+    return success({
       message:
         "If an account exists with this email, you will receive a password reset link.",
     });
-  } catch (error) {
-    console.error("Forgot password error:", error);
-    return errorResponse(
-      "An error occurred. Please try again.",
-      "SERVER_ERROR",
-      500
-    );
+  } catch (err) {
+    console.error("Forgot password error:", err);
+    return error("SERVER_ERROR", "An error occurred. Please try again.", 500);
   }
 }

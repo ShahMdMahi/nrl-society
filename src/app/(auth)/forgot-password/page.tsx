@@ -56,7 +56,7 @@ export default function ForgotPasswordPage() {
         body: JSON.stringify({ email: email.trim().toLowerCase() }),
       });
 
-      const data = await res.json();
+      const data = (await res.json()) as { error?: { message?: string } };
 
       if (res.ok) {
         setIsSubmitted(true);

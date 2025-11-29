@@ -50,7 +50,7 @@ function ResetPasswordForm() {
 
       try {
         const res = await fetch(`/api/v1/auth/reset-password?token=${token}`);
-        const data = await res.json();
+        const data = (await res.json()) as { error?: { message?: string } };
 
         if (!res.ok) {
           setTokenError(
@@ -135,7 +135,7 @@ function ResetPasswordForm() {
         }),
       });
 
-      const data = await res.json();
+      const data = (await res.json()) as { error?: { message?: string } };
 
       if (res.ok) {
         setIsSubmitted(true);

@@ -1,7 +1,7 @@
 import { NextRequest } from "next/server";
 import { getDB } from "@/lib/cloudflare/d1";
 import { users, passwordResetTokens } from "@/lib/db/schema";
-import { successResponse, errorResponse } from "@/lib/api/response";
+import { success, error } from "@/lib/api/response";
 import { hashToken } from "@/lib/email";
 import { hashPassword } from "@/lib/auth/password";
 import { eq, and, gt, isNull } from "drizzle-orm";
@@ -10,22 +10,25 @@ export const runtime = "edge";
 
 export async function POST(request: NextRequest) {
   try {
-    const body = await request.json();
+    const body = (await request.json()) as {
+      token?: string;
+      password?: string;
+    };
     const { token, password } = body;
 
     if (!token || typeof token !== "string") {
-      return errorResponse("Reset token is required", "VALIDATION_ERROR", 400);
+      return error("VALIDATION_ERROR", "Reset token is required", 400);
     }
 
     if (!password || typeof password !== "string") {
-      return errorResponse("New password is required", "VALIDATION_ERROR", 400);
+      return error("VALIDATION_ERROR", "New password is required", 400);
     }
 
     // Validate password strength
     if (password.length < 8) {
-      return errorResponse(
-        "Password must be at least 8 characters",
+      return error(
         "VALIDATION_ERROR",
+        "Password must be at least 8 characters",
         400
       );
     }
@@ -53,9 +56,9 @@ export async function POST(request: NextRequest) {
       .limit(1);
 
     if (!resetToken) {
-      return errorResponse(
-        "Invalid or expired reset link. Please request a new password reset.",
+      return error(
         "INVALID_TOKEN",
+        "Invalid or expired reset link. Please request a new password reset.",
         400
       );
     }
@@ -93,16 +96,12 @@ export async function POST(request: NextRequest) {
         )
       );
 
-    return successResponse({
+    return success({
       message: "Password has been reset successfully. You can now log in.",
     });
-  } catch (error) {
-    console.error("Reset password error:", error);
-    return errorResponse(
-      "An error occurred. Please try again.",
-      "SERVER_ERROR",
-      500
-    );
+  } catch (err) {
+    console.error("Reset password error:", err);
+    return error("SERVER_ERROR", "An error occurred. Please try again.", 500);
   }
 }
 
@@ -113,7 +112,7 @@ export async function GET(request: NextRequest) {
     const token = searchParams.get("token");
 
     if (!token) {
-      return errorResponse("Token is required", "VALIDATION_ERROR", 400);
+      return error("VALIDATION_ERROR", "Token is required", 400);
     }
 
     const db = await getDB();
@@ -135,23 +134,15 @@ export async function GET(request: NextRequest) {
       .limit(1);
 
     if (!resetToken) {
-      return errorResponse(
-        "Invalid or expired reset link",
-        "INVALID_TOKEN",
-        400
-      );
+      return error("INVALID_TOKEN", "Invalid or expired reset link", 400);
     }
 
-    return successResponse({
+    return success({
       valid: true,
       expiresAt: resetToken.expiresAt.toISOString(),
     });
-  } catch (error) {
-    console.error("Verify token error:", error);
-    return errorResponse(
-      "An error occurred. Please try again.",
-      "SERVER_ERROR",
-      500
-    );
+  } catch (err) {
+    console.error("Verify token error:", err);
+    return error("SERVER_ERROR", "An error occurred. Please try again.", 500);
   }
 }
