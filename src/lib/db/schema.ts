@@ -22,6 +22,9 @@ export const users = sqliteTable(
     avatarUrl: text("avatar_url"),
     coverUrl: text("cover_url"),
     isVerified: integer("is_verified", { mode: "boolean" }).default(false),
+    emailVerified: integer("email_verified", { mode: "boolean" }).default(
+      false
+    ),
     isPrivate: integer("is_private", { mode: "boolean" }).default(false),
     createdAt: integer("created_at", { mode: "timestamp" })
       .notNull()

@@ -244,30 +244,52 @@ export function parseQuery<T>(
 }
 
 /**
- * Simple in-memory rate limiter (for Cloudflare Workers, use KV in production)
- * This is a placeholder - implement proper rate limiting with KV
+ * KV-based rate limiter for Cloudflare Workers
+ * Uses CACHE_KV namespace for rate limiting data
  */
-const rateLimitMap = new Map<string, { count: number; resetAt: number }>();
+interface RateLimitRecord {
+  count: number;
+  resetAt: number;
+}
 
 export async function checkRateLimit(
   key: string,
   limit: number = 100,
   windowMs: number = 60000
 ): Promise<boolean> {
-  const now = Date.now();
-  const record = rateLimitMap.get(key);
+  try {
+    const { cacheGet, cacheSet } = await import("@/lib/cloudflare/kv");
+    const now = Date.now();
+    const rateLimitKey = `ratelimit:${key}`;
 
-  if (!record || record.resetAt < now) {
-    rateLimitMap.set(key, { count: 1, resetAt: now + windowMs });
+    const record = await cacheGet<RateLimitRecord>(rateLimitKey);
+
+    if (!record || record.resetAt < now) {
+      // Start a new window
+      await cacheSet(
+        rateLimitKey,
+        { count: 1, resetAt: now + windowMs },
+        Math.ceil(windowMs / 1000) + 60 // TTL slightly longer than window
+      );
+      return true;
+    }
+
+    if (record.count >= limit) {
+      return false;
+    }
+
+    // Increment count
+    await cacheSet(
+      rateLimitKey,
+      { count: record.count + 1, resetAt: record.resetAt },
+      Math.ceil((record.resetAt - now) / 1000) + 60
+    );
+    return true;
+  } catch (err) {
+    // If KV fails, allow the request but log the error
+    console.error("Rate limit check failed:", err);
     return true;
   }
-
-  if (record.count >= limit) {
-    return false;
-  }
-
-  record.count++;
-  return true;
 }
 
 /**

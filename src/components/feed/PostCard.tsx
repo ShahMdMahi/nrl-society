@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useMemo } from "react";
 import Link from "next/link";
 import { formatDistanceToNow } from "date-fns";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
@@ -29,6 +29,66 @@ import {
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { MediaGallery } from "@/components/shared/MediaGallery";
+
+/**
+ * Parse content and render @mentions as clickable links
+ */
+function RenderContent({ content }: { content: string }) {
+  const parts = useMemo(() => {
+    // Split content by @mentions while keeping the mentions
+    const mentionRegex = /(@[a-zA-Z0-9_]{3,30})\b/g;
+    const segments: { type: "text" | "mention"; value: string }[] = [];
+    let lastIndex = 0;
+    let match;
+
+    while ((match = mentionRegex.exec(content)) !== null) {
+      // Add text before the mention
+      if (match.index > lastIndex) {
+        segments.push({
+          type: "text",
+          value: content.slice(lastIndex, match.index),
+        });
+      }
+      // Add the mention
+      segments.push({
+        type: "mention",
+        value: match[1],
+      });
+      lastIndex = match.index + match[0].length;
+    }
+
+    // Add remaining text
+    if (lastIndex < content.length) {
+      segments.push({
+        type: "text",
+        value: content.slice(lastIndex),
+      });
+    }
+
+    return segments;
+  }, [content]);
+
+  return (
+    <>
+      {parts.map((part, index) => {
+        if (part.type === "mention") {
+          const username = part.value.slice(1); // Remove @ symbol
+          return (
+            <Link
+              key={index}
+              href={`/search?q=${encodeURIComponent(username)}&type=users`}
+              className="text-primary hover:underline"
+              onClick={(e) => e.stopPropagation()}
+            >
+              {part.value}
+            </Link>
+          );
+        }
+        return <span key={index}>{part.value}</span>;
+      })}
+    </>
+  );
+}
 
 export interface PostData {
   id: string;
@@ -290,7 +350,9 @@ export function PostCard({ post, onDelete }: PostCardProps) {
       </CardHeader>
       <CardContent className="pb-3">
         {post.content && (
-          <p className="text-sm whitespace-pre-wrap">{post.content}</p>
+          <p className="text-sm whitespace-pre-wrap">
+            <RenderContent content={post.content} />
+          </p>
         )}
         {post.mediaUrls && post.mediaUrls.length > 0 && (
           <MediaGallery mediaUrls={post.mediaUrls} className="mt-3" />

@@ -79,12 +79,88 @@ async function handleGetSuggestions(
       .orderBy(desc(users.isVerified), desc(users.createdAt))
       .limit(limit);
 
-    // Add mutual friends count (simplified - just showing random suggestions for now)
-    const suggestionsWithMutuals = suggestions.map((s) => ({
-      ...s,
-      mutualFriendsCount: 0, // TODO: Calculate actual mutual friends
-      reason: s.isVerified ? "Verified account" : "Suggested for you",
-    }));
+    // Get current user's friends
+    const myFriends = await db
+      .select({ friendId: friendships.addresseeId })
+      .from(friendships)
+      .where(
+        and(
+          eq(friendships.requesterId, user.id),
+          eq(friendships.status, "accepted")
+        )
+      )
+      .union(
+        db
+          .select({ friendId: friendships.requesterId })
+          .from(friendships)
+          .where(
+            and(
+              eq(friendships.addresseeId, user.id),
+              eq(friendships.status, "accepted")
+            )
+          )
+      );
+
+    const myFriendIds = myFriends.map((f) => f.friendId);
+
+    // Calculate mutual friends for each suggestion
+    const suggestionsWithMutuals = await Promise.all(
+      suggestions.map(async (s) => {
+        let mutualFriendsCount = 0;
+
+        if (myFriendIds.length > 0) {
+          // Get this suggested user's friends
+          const theirFriends = await db
+            .select({ friendId: friendships.addresseeId })
+            .from(friendships)
+            .where(
+              and(
+                eq(friendships.requesterId, s.id),
+                eq(friendships.status, "accepted")
+              )
+            )
+            .union(
+              db
+                .select({ friendId: friendships.requesterId })
+                .from(friendships)
+                .where(
+                  and(
+                    eq(friendships.addresseeId, s.id),
+                    eq(friendships.status, "accepted")
+                  )
+                )
+            );
+
+          const theirFriendIds = theirFriends.map((f) => f.friendId);
+
+          // Count mutual friends
+          mutualFriendsCount = myFriendIds.filter((id) =>
+            theirFriendIds.includes(id)
+          ).length;
+        }
+
+        let reason = "Suggested for you";
+        if (mutualFriendsCount > 0) {
+          reason = `${mutualFriendsCount} mutual friend${mutualFriendsCount > 1 ? "s" : ""}`;
+        } else if (s.isVerified) {
+          reason = "Verified account";
+        }
+
+        return {
+          ...s,
+          mutualFriendsCount,
+          reason,
+        };
+      })
+    );
+
+    // Sort by mutual friends count (highest first), then verified
+    suggestionsWithMutuals.sort((a, b) => {
+      if (b.mutualFriendsCount !== a.mutualFriendsCount) {
+        return b.mutualFriendsCount - a.mutualFriendsCount;
+      }
+      return (b.isVerified ? 1 : 0) - (a.isVerified ? 1 : 0);
+    });
 
     return success(suggestionsWithMutuals);
   } catch (err) {

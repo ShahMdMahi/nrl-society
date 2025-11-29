@@ -7,6 +7,14 @@ import { Textarea } from "@/components/ui/textarea";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Card, CardContent } from "@/components/ui/card";
 import { ImageIcon, Video, Smile, Loader2, X } from "lucide-react";
+import {
+  compressImage,
+  formatFileSize,
+} from "@/lib/utils/image-compression";
+import {
+  MentionDropdown,
+  useMention,
+} from "@/components/shared/MentionDropdown";
 
 interface PostComposerProps {
   user: {
@@ -26,6 +34,19 @@ export function PostComposer({ user, onPostCreated }: PostComposerProps) {
   const imageInputRef = useRef<HTMLInputElement>(null);
   const videoInputRef = useRef<HTMLInputElement>(null);
 
+  // Mention autocomplete
+  const {
+    showDropdown,
+    mentionQuery,
+    dropdownPosition,
+    handleSelectUser,
+    closeDropdown,
+  } = useMention({
+    inputRef: textareaRef,
+    value: content,
+    onChange: setContent,
+  });
+
   const handleSubmit = async () => {
     if ((!content.trim() && mediaFiles.length === 0) || isLoading) return;
 
@@ -38,8 +59,28 @@ export function PostComposer({ user, onPostCreated }: PostComposerProps) {
       if (mediaFiles.length > 0) {
         setIsUploading(true);
         for (const file of mediaFiles) {
+          // Compress images before upload
+          let fileToUpload = file;
+          if (file.type.startsWith("image/")) {
+            try {
+              const originalSize = file.size;
+              fileToUpload = await compressImage(file, {
+                maxWidth: 1920,
+                maxHeight: 1920,
+                quality: 0.85,
+                maxSizeKB: 1024, // 1MB max
+              });
+              const compressedSize = fileToUpload.size;
+              console.log(
+                `Image compressed: ${formatFileSize(originalSize)} → ${formatFileSize(compressedSize)} (${Math.round((1 - compressedSize / originalSize) * 100)}% reduction)`
+              );
+            } catch (err) {
+              console.warn("Image compression failed, using original:", err);
+            }
+          }
+
           const formData = new FormData();
-          formData.append("file", file);
+          formData.append("file", fileToUpload);
           formData.append("type", "post");
 
           const uploadRes = await fetch("/api/v1/upload", {
@@ -141,14 +182,26 @@ export function PostComposer({ user, onPostCreated }: PostComposerProps) {
             </AvatarFallback>
           </Avatar>
           <div className="flex-1 space-y-3">
-            <Textarea
-              ref={textareaRef}
-              placeholder="What's on your mind?"
-              value={content}
-              onChange={handleTextareaChange}
-              className="min-h-20 resize-none border-0 p-0 text-base focus-visible:ring-0"
-              disabled={isLoading}
-            />
+            <div className="relative">
+              <Textarea
+                ref={textareaRef}
+                placeholder="What's on your mind? Use @username to mention someone"
+                value={content}
+                onChange={handleTextareaChange}
+                className="min-h-20 resize-none border-0 p-0 text-base focus-visible:ring-0"
+                disabled={isLoading}
+              />
+
+              {/* Mention Dropdown */}
+              {showDropdown && (
+                <MentionDropdown
+                  query={mentionQuery}
+                  position={dropdownPosition}
+                  onSelect={handleSelectUser}
+                  onClose={closeDropdown}
+                />
+              )}
+            </div>
 
             {/* Media Previews */}
             {mediaPreviewUrls.length > 0 && (

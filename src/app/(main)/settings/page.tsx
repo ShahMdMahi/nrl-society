@@ -40,6 +40,7 @@ import {
   Lock,
 } from "lucide-react";
 import { toast } from "sonner";
+import { compressImage } from "@/lib/utils/image-compression";
 
 interface UserProfile {
   id: string;
@@ -169,8 +170,16 @@ export default function SettingsPage() {
 
     setIsUploadingAvatar(true);
     try {
+      // Compress image before upload
+      const compressedFile = await compressImage(file, {
+        maxWidth: 400,
+        maxHeight: 400,
+        quality: 0.9,
+        maxSizeKB: 200, // 200KB max for avatars
+      });
+
       const formData = new FormData();
-      formData.append("file", file);
+      formData.append("file", compressedFile);
       formData.append("type", "avatar");
 
       const uploadRes = await fetch("/api/v1/upload", {
@@ -212,8 +221,16 @@ export default function SettingsPage() {
 
     setIsUploadingCover(true);
     try {
+      // Compress image before upload
+      const compressedFile = await compressImage(file, {
+        maxWidth: 1500,
+        maxHeight: 500,
+        quality: 0.85,
+        maxSizeKB: 500, // 500KB max for covers
+      });
+
       const formData = new FormData();
-      formData.append("file", file);
+      formData.append("file", compressedFile);
       formData.append("type", "cover");
 
       const uploadRes = await fetch("/api/v1/upload", {

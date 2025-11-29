@@ -1,6 +1,6 @@
 import { NextRequest } from "next/server";
 import { getDB } from "@/lib/cloudflare/d1";
-import { posts, users, likes } from "@/lib/db/schema";
+import { posts, users, likes, notifications } from "@/lib/db/schema";
 import {
   success,
   validationError,
@@ -14,6 +14,22 @@ import {
   ApiContext,
 } from "@/lib/api";
 import { eq, desc, lt, and, inArray, or, isNull } from "drizzle-orm";
+
+/**
+ * Extract @username mentions from post content
+ * Returns array of unique usernames (without the @ symbol)
+ */
+function extractMentions(content: string | null | undefined): string[] {
+  if (!content) return [];
+  // Match @username patterns (alphanumeric and underscores, 3-30 chars)
+  const mentionRegex = /@([a-zA-Z0-9_]{3,30})\b/g;
+  const matches = content.matchAll(mentionRegex);
+  const usernames = new Set<string>();
+  for (const match of matches) {
+    usernames.add(match[1].toLowerCase());
+  }
+  return Array.from(usernames);
+}
 
 // GET /api/v1/posts - Get feed (paginated)
 async function handleGetFeed(
@@ -141,6 +157,37 @@ async function handleCreatePost(
         visibility,
       })
       .returning();
+
+    // Handle @mentions - extract and create notifications
+    const mentionedUsernames = extractMentions(content);
+    if (mentionedUsernames.length > 0) {
+      // Find users by username (case-insensitive)
+      const mentionedUsers = await db
+        .select({ id: users.id, username: users.username })
+        .from(users)
+        .where(
+          inArray(
+            users.username,
+            mentionedUsernames
+          )
+        );
+
+      // Create notifications for mentioned users (except self)
+      const mentionNotifications = mentionedUsers
+        .filter((u) => u.id !== user.id)
+        .map((u) => ({
+          userId: u.id,
+          type: "mention" as const,
+          actorId: user.id,
+          targetType: "post",
+          targetId: newPost.id,
+          content: content?.substring(0, 100) || null, // Include preview of post content
+        }));
+
+      if (mentionNotifications.length > 0) {
+        await db.insert(notifications).values(mentionNotifications);
+      }
+    }
 
     // Get author info
     const [author] = await db

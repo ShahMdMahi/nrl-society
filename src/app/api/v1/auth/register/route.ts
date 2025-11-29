@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { getDB } from "@/lib/cloudflare/d1";
-import { users } from "@/lib/db/schema";
+import { users, emailVerificationTokens } from "@/lib/db/schema";
 import { hashPassword } from "@/lib/auth/password";
 import { createSession } from "@/lib/auth/session";
 import {
@@ -18,6 +18,12 @@ import {
   getClientIP,
   RateLimitPresets,
 } from "@/lib/security";
+import {
+  sendEmail,
+  generateToken,
+  hashToken,
+  getWelcomeEmailHtml,
+} from "@/lib/email";
 import { eq, or } from "drizzle-orm";
 
 const REQUEST_ID_PREFIX = "register";
@@ -110,6 +116,7 @@ export async function POST(request: NextRequest) {
         username,
         passwordHash,
         displayName,
+        emailVerified: false,
       })
       .returning({
         id: users.id,
@@ -118,11 +125,40 @@ export async function POST(request: NextRequest) {
         displayName: users.displayName,
         avatarUrl: users.avatarUrl,
         isVerified: users.isVerified,
+        emailVerified: users.emailVerified,
         createdAt: users.createdAt,
       });
 
     // Create session
     const sessionId = await createSession(newUser.id);
+
+    // Send verification email (non-blocking)
+    try {
+      const token = generateToken();
+      const tokenHash = await hashToken(token);
+      const expiresAt = new Date(Date.now() + 24 * 60 * 60 * 1000); // 24 hours
+
+      await db.insert(emailVerificationTokens).values({
+        userId: newUser.id,
+        tokenHash,
+        expiresAt,
+      });
+
+      const baseUrl =
+        process.env.NEXT_PUBLIC_APP_URL ||
+        request.headers.get("origin") ||
+        "http://localhost:3000";
+      const verifyUrl = `${baseUrl}/verify-email?token=${token}`;
+
+      await sendEmail({
+        to: newUser.email,
+        subject: "Welcome to NRL Society - Verify your email",
+        html: getWelcomeEmailHtml(verifyUrl, newUser.displayName),
+      });
+    } catch (emailError) {
+      // Log but don't fail registration if email fails
+      console.error("Failed to send verification email:", emailError);
+    }
 
     logInfo(requestId, "register_success", {
       userId: newUser.id,
@@ -138,8 +174,11 @@ export async function POST(request: NextRequest) {
           displayName: newUser.displayName,
           avatarUrl: newUser.avatarUrl,
           isVerified: newUser.isVerified,
+          emailVerified: newUser.emailVerified,
         },
         sessionId,
+        message:
+          "Account created! Please check your email to verify your account.",
       },
       undefined,
       201

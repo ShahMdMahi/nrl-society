@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect, useCallback } from "react";
+import { useState, useEffect, useCallback, useRef } from "react";
 import { formatDistanceToNow } from "date-fns";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Button } from "@/components/ui/button";
@@ -16,6 +16,7 @@ import {
   AtSign,
   Check,
   Trash2,
+  RefreshCw,
 } from "lucide-react";
 import Link from "next/link";
 
@@ -64,8 +65,11 @@ export default function NotificationsPage() {
   const [notifications, setNotifications] = useState<Notification[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [unreadCount, setUnreadCount] = useState(0);
+  const [isRefreshing, setIsRefreshing] = useState(false);
+  const pollIntervalRef = useRef<NodeJS.Timeout | null>(null);
 
-  const fetchNotifications = useCallback(async () => {
+  const fetchNotifications = useCallback(async (showRefreshing = false) => {
+    if (showRefreshing) setIsRefreshing(true);
     try {
       const res = await fetch("/api/v1/notifications");
       const data = (await res.json()) as {
@@ -82,12 +86,31 @@ export default function NotificationsPage() {
       console.error("Failed to fetch notifications:", error);
     } finally {
       setIsLoading(false);
+      setIsRefreshing(false);
     }
   }, []);
 
+  // Initial fetch
   useEffect(() => {
     fetchNotifications();
   }, [fetchNotifications]);
+
+  // Polling for new notifications every 30 seconds
+  useEffect(() => {
+    pollIntervalRef.current = setInterval(() => {
+      fetchNotifications(false);
+    }, 30000);
+
+    return () => {
+      if (pollIntervalRef.current) {
+        clearInterval(pollIntervalRef.current);
+      }
+    };
+  }, [fetchNotifications]);
+
+  const handleManualRefresh = () => {
+    fetchNotifications(true);
+  };
 
   const markAsRead = async (ids?: string[]) => {
     try {
@@ -153,12 +176,25 @@ export default function NotificationsPage() {
               <Badge variant="destructive">{unreadCount}</Badge>
             )}
           </div>
-          {unreadCount > 0 && (
-            <Button variant="ghost" size="sm" onClick={() => markAsRead()}>
-              <Check className="mr-2 h-4 w-4" />
-              Mark all read
+          <div className="flex items-center gap-2">
+            <Button
+              variant="ghost"
+              size="sm"
+              onClick={handleManualRefresh}
+              disabled={isRefreshing}
+            >
+              <RefreshCw
+                className={`mr-2 h-4 w-4 ${isRefreshing ? "animate-spin" : ""}`}
+              />
+              Refresh
             </Button>
-          )}
+            {unreadCount > 0 && (
+              <Button variant="ghost" size="sm" onClick={() => markAsRead()}>
+                <Check className="mr-2 h-4 w-4" />
+                Mark all read
+              </Button>
+            )}
+          </div>
         </CardHeader>
         <CardContent>
           {notifications.length === 0 ? (

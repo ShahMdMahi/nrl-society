@@ -1,5 +1,6 @@
 "use client";
 
+import { useState, useEffect, useCallback } from "react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import {
@@ -23,6 +24,7 @@ import {
 } from "@/components/ui/dropdown-menu";
 import { Sheet, SheetContent, SheetTrigger } from "@/components/ui/sheet";
 import { ThemeToggle } from "@/components/shared/ThemeToggle";
+import { Badge } from "@/components/ui/badge";
 import { cn } from "@/lib/utils";
 
 interface NavbarProps {
@@ -43,6 +45,33 @@ const navItems = [
 
 export function Navbar({ user }: NavbarProps) {
   const pathname = usePathname();
+  const [unreadNotifications, setUnreadNotifications] = useState(0);
+
+  const fetchNotificationCount = useCallback(async () => {
+    if (!user) return;
+    try {
+      const res = await fetch("/api/v1/notifications?limit=1");
+      const data = (await res.json()) as {
+        success: boolean;
+        meta?: { total?: number };
+      };
+      if (data.success && data.meta?.total !== undefined) {
+        setUnreadNotifications(data.meta.total);
+      }
+    } catch {
+      // Silently fail
+    }
+  }, [user]);
+
+  // Fetch notification count on mount and every 30 seconds
+  useEffect(() => {
+    if (!user) return;
+
+    fetchNotificationCount();
+    const interval = setInterval(fetchNotificationCount, 30000);
+
+    return () => clearInterval(interval);
+  }, [user, fetchNotificationCount]);
 
   const handleLogout = async () => {
     try {
@@ -69,12 +98,20 @@ export function Navbar({ user }: NavbarProps) {
                 variant={pathname === item.href ? "secondary" : "ghost"}
                 size="sm"
                 className={cn(
-                  "gap-2",
+                  "relative gap-2",
                   pathname === item.href && "bg-secondary"
                 )}
               >
                 <item.icon className="h-5 w-5" />
                 <span className="hidden lg:inline">{item.label}</span>
+                {item.href === "/notifications" && unreadNotifications > 0 && (
+                  <Badge
+                    variant="destructive"
+                    className="absolute -top-1 -right-1 h-5 min-w-5 px-1 text-xs"
+                  >
+                    {unreadNotifications > 99 ? "99+" : unreadNotifications}
+                  </Badge>
+                )}
               </Button>
             </Link>
           ))}
@@ -191,10 +228,21 @@ export function Navbar({ user }: NavbarProps) {
                   <Link key={item.href} href={item.href}>
                     <Button
                       variant={pathname === item.href ? "secondary" : "ghost"}
-                      className="w-full justify-start gap-3"
+                      className="relative w-full justify-start gap-3"
                     >
                       <item.icon className="h-5 w-5" />
                       {item.label}
+                      {item.href === "/notifications" &&
+                        unreadNotifications > 0 && (
+                          <Badge
+                            variant="destructive"
+                            className="ml-auto h-5 min-w-5 px-1 text-xs"
+                          >
+                            {unreadNotifications > 99
+                              ? "99+"
+                              : unreadNotifications}
+                          </Badge>
+                        )}
                     </Button>
                   </Link>
                 ))}
