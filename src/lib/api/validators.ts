@@ -1,8 +1,22 @@
 import { z } from "zod";
 
+// Password strength requirements
+export const PASSWORD_REQUIREMENTS = {
+  minLength: 8,
+  maxLength: 100,
+  requireUppercase: true,
+  requireLowercase: true,
+  requireNumber: true,
+  requireSpecial: true,
+} as const;
+
 // Common validation patterns
-const emailSchema = z.string().email("Invalid email address").toLowerCase();
-const usernameSchema = z
+export const emailSchema = z
+  .string()
+  .email("Invalid email address")
+  .toLowerCase();
+
+export const usernameSchema = z
   .string()
   .min(3, "Username must be at least 3 characters")
   .max(30, "Username must be at most 30 characters")
@@ -11,11 +25,36 @@ const usernameSchema = z
     "Username can only contain letters, numbers, and underscores"
   )
   .toLowerCase();
-const passwordSchema = z
+
+// Strong password schema with comprehensive validation
+export const passwordSchema = z
   .string()
-  .min(8, "Password must be at least 8 characters")
-  .max(100, "Password must be at most 100 characters");
-const displayNameSchema = z
+  .min(
+    PASSWORD_REQUIREMENTS.minLength,
+    `Password must be at least ${PASSWORD_REQUIREMENTS.minLength} characters`
+  )
+  .max(
+    PASSWORD_REQUIREMENTS.maxLength,
+    `Password must be at most ${PASSWORD_REQUIREMENTS.maxLength} characters`
+  )
+  .refine(
+    (password) => /[A-Z]/.test(password),
+    "Password must contain at least one uppercase letter"
+  )
+  .refine(
+    (password) => /[a-z]/.test(password),
+    "Password must contain at least one lowercase letter"
+  )
+  .refine(
+    (password) => /[0-9]/.test(password),
+    "Password must contain at least one number"
+  )
+  .refine(
+    (password) => /[!@#$%^&*()_+\-=\[\]{};':"\\|,.<>\/?]/.test(password),
+    "Password must contain at least one special character (!@#$%^&*...)"
+  );
+
+export const displayNameSchema = z
   .string()
   .min(1, "Display name is required")
   .max(50, "Display name must be at most 50 characters");

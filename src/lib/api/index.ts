@@ -31,6 +31,11 @@ export {
   searchSchema,
   validateBody,
   validateParams,
+  emailSchema,
+  usernameSchema,
+  passwordSchema,
+  displayNameSchema,
+  PASSWORD_REQUIREMENTS,
 } from "./validators";
 export type {
   RegisterInput,

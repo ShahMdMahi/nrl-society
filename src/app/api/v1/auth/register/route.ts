@@ -1,4 +1,4 @@
-import { NextRequest } from "next/server";
+import { NextRequest, NextResponse } from "next/server";
 import { getDB } from "@/lib/cloudflare/d1";
 import { users } from "@/lib/db/schema";
 import { hashPassword } from "@/lib/auth/password";
@@ -13,14 +13,50 @@ import {
   logError,
   logInfo,
 } from "@/lib/api";
+import {
+  checkRateLimitKV,
+  getClientIP,
+  RateLimitPresets,
+} from "@/lib/security";
 import { eq, or } from "drizzle-orm";
 
 const REQUEST_ID_PREFIX = "register";
 
 export async function POST(request: NextRequest) {
   const requestId = `${REQUEST_ID_PREFIX}_${Date.now().toString(36)}`;
+  const clientIP = getClientIP(request);
 
   try {
+    // Check rate limit by IP for registration
+    const rateLimitKey = `register:${clientIP}`;
+    const rateLimit = await checkRateLimitKV(
+      rateLimitKey,
+      RateLimitPresets.register
+    );
+
+    if (!rateLimit.allowed) {
+      logInfo(requestId, "register_rate_limited", {
+        ip: clientIP,
+        retryAfter: rateLimit.retryAfter,
+      });
+
+      return new NextResponse(
+        JSON.stringify({
+          success: false,
+          error: {
+            code: ErrorCodes.RATE_LIMIT_EXCEEDED,
+            message: `Too many registration attempts. Please try again in ${Math.ceil((rateLimit.retryAfter || 60) / 60)} minutes.`,
+          },
+        }),
+        {
+          status: 429,
+          headers: {
+            "Content-Type": "application/json",
+            "Retry-After": String(rateLimit.retryAfter || 60),
+          },
+        }
+      );
+    }
     // Validate request body
     const parsed = await parseBody(request, registerSchema);
     if (!parsed.success) {
@@ -88,7 +124,10 @@ export async function POST(request: NextRequest) {
     // Create session
     const sessionId = await createSession(newUser.id);
 
-    logInfo(requestId, "register_success", { userId: newUser.id });
+    logInfo(requestId, "register_success", {
+      userId: newUser.id,
+      ip: clientIP,
+    });
 
     return success(
       {
